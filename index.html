@@ -971,6 +971,10 @@ function App() {
     setChars([]); setRels([]); setSelected(null); setConfirm(null); showToast("Cleared");
   }, "Clear All");
 
+  const resetToDemo = () => askConfirm("Reset to Demo","This will replace all characters and relationships with the built-in demo data. This cannot be undone.",()=>{
+    setTreeName(DEMO.treeName); setChars(DEMO.chars.map(c=>({...c,disorders:c.disorders||[]}))); setRels(DEMO.rels); setSelected(null); setPreLayoutChars(null); setConfirm(null); showToast("↺ Reset to demo");
+  }, "Reset");
+
   const autoLayout = () => {
     if(!chars.length) return;
 
@@ -1632,7 +1636,7 @@ function App() {
     h("div",{style:{maxWidth:900,margin:"0 auto"}},
       h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--th-border)"}},
         h("div",null,h("div",{className:"panel-heading"},"Characters"),h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",marginTop:3}},chars.length+" characters in this tree")),
-        h("div",{style:{display:"flex",gap:8}},h("button",{className:"btn muted sm",onClick:clearAll},"Clear All"),h("button",{className:"btn",onClick:addChar},"+ Add Character"))),
+        h("div",{style:{display:"flex",gap:8}},h("button",{className:"btn muted sm",onClick:clearAll},"Clear All"),h("button",{className:"btn muted sm",onClick:resetToDemo,title:"Reset to the built-in demo dynasty"},"↺ Reset Demo"),h("button",{className:"btn",onClick:addChar},"+ Add Character"))),
       chars.length===0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},"No characters yet. Click \"+ Add Character\" to begin."),
       h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}},
         ...chars.map(c=>h("div",{key:c.id,className:"char-card",style:{borderColor:selected===c.id?c.color:"var(--th-border)"},
