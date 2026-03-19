@@ -245,6 +245,16 @@
 
     /* Keyboard hint */
     .kbd { display:inline-block; background:var(--th-stone); border:1px solid var(--th-border2); border-radius:3px; padding:1px 5px; font-size:11px; font-family:monospace; color:var(--th-bone-dim); }
+
+    /* Undo toast */
+    @keyframes toastInStay {
+      0%   { opacity:0; transform:translateX(-50%) translateY(10px); }
+      8%   { opacity:1; transform:translateX(-50%) translateY(0); }
+      100% { opacity:1; }
+    }
+    .toast.toast-action { animation:toastInStay 0.3s forwards; pointer-events:all; gap:4px; }
+    .toast-undo-btn { background:none; border:1px solid currentColor; padding:2px 10px; border-radius:10px; cursor:pointer; font-size:13px; font-family:'Crimson Pro',serif; font-weight:600; margin-left:8px; transition:background 0.15s,color 0.15s; }
+    .toast-undo-btn:hover { background:var(--th-accent1); color:var(--th-void); border-color:var(--th-accent1); }
   </style>
 </head>
 <body>
@@ -455,7 +465,7 @@ function GenderIcon({gender,x,y,col}) {
 }
 
 // ─── SVG CharNode ─────────────────────────────────────────────────────────────
-function CharNode({c,selected,linking,dimmed,onMouseDown,onDoubleClick,onContextMenu}) {
+function CharNode({c,selected,linking,dimmed,onMouseDown,onDoubleClick,onContextMenu,onMouseEnter,onMouseLeave}) {
   const isSel=selected===c.id, isLnk=linking===c.id, cx=NODE_W/2;
   const rows=[];
   if(c.role) rows.push({text:trunc(c.role,22),color:"var(--th-accent2)",size:11,italic:true});
@@ -483,7 +493,9 @@ function CharNode({c,selected,linking,dimmed,onMouseDown,onDoubleClick,onContext
   return h("g",{style:{cursor:linking?"crosshair":"grab",opacity:dimmed?0.22:1,transition:"opacity 0.15s"},transform:"translate("+c.x+","+c.y+")",
     onMouseDown:e=>onMouseDown(e,c.id),
     onDoubleClick:e=>{e.stopPropagation();onDoubleClick(c);},
-    onContextMenu:e=>{e.preventDefault();e.stopPropagation();if(onContextMenu)onContextMenu(e,c);}
+    onContextMenu:e=>{e.preventDefault();e.stopPropagation();if(onContextMenu)onContextMenu(e,c);},
+    onMouseEnter:()=>{if(onMouseEnter)onMouseEnter(c.id);},
+    onMouseLeave:()=>{if(onMouseLeave)onMouseLeave();}
   },...ch);
 }
 
@@ -876,8 +888,11 @@ function App() {
   const [showThemePicker,setShowThemePicker] = useState(false);
   const [showWelcome,setShowWelcome]       = useState(()=>shouldShowWelcome());
   const [relTypeFilter,setRelTypeFilter]   = useState("All");
+  const [hoveredChar,setHoveredChar]       = useState(null);
+  const [globalSearch,setGlobalSearch]     = useState("");
+  const [showGlobalSearch,setShowGlobalSearch] = useState(false);
 
-  const svgRef=useRef(null), panRef=useRef(false), toastRef=useRef(null), fileRef=useRef(null), panClickRef=useRef(null);
+  const svgRef=useRef(null), panRef=useRef(false), toastRef=useRef(null), fileRef=useRef(null), panClickRef=useRef(null), globalSearchRef=useRef(null);
 
   // Persist active dynasty whenever tree data changes
   useEffect(()=>{
@@ -960,9 +975,20 @@ function App() {
     setTheme(newTheme);
   };
 
-  const showToast = msg => {
+  const centerOnChar = id => {
+    const c=chars.find(ch=>ch.id===id);
+    if(!c||!svgRef.current) return;
+    const {width,height}=svgRef.current.getBoundingClientRect();
+    setPan({x:width/2-(c.x+NODE_W/2)*zoom, y:height/2-(c.y+NODE_H/2)*zoom});
+  };
+
+  const showToast = (msg, undoFn) => {
     setToast(null);
-    requestAnimationFrame(()=>{ setToast(msg); clearTimeout(toastRef.current); toastRef.current=setTimeout(()=>setToast(null),2800); });
+    requestAnimationFrame(()=>{
+      const t=undoFn?{msg,undoFn}:msg;
+      setToast(t); clearTimeout(toastRef.current);
+      toastRef.current=setTimeout(()=>setToast(null),undoFn?6000:2800);
+    });
   };
 
   const askConfirm = (title,msg,fn,confirmLabel) => setConfirm({title,message:msg,onConfirm:fn,confirmLabel:confirmLabel||"Confirm"});
@@ -999,12 +1025,16 @@ function App() {
   const deleteChar = id => askConfirm("Delete Character",
     "This will also remove all relationships involving this character.",
     ()=>{
-      setPreDeleteState({chars,rels});
+      const snapshot={chars,rels};
+      setPreDeleteState(snapshot);
       const nr=rels.filter(r=>r.from!==id&&r.to!==id);
       setChars(prev=>propagateDisorders(prev.filter(c=>c.id!==id),nr));
       setRels(nr);
       if(selected===id) setSelected(null);
-      setEditingChar(null); setConfirm(null); showToast("Character deleted");
+      setEditingChar(null); setConfirm(null);
+      showToast("Character deleted",()=>{
+        setChars(snapshot.chars); setRels(snapshot.rels); setPreDeleteState(null); showToast("↩ Deletion undone");
+      });
     }, "Delete");
 
   const undoDelete = () => {
@@ -1491,6 +1521,17 @@ function App() {
   const selectedRels = selected?rels.filter(r=>r.from===selected||r.to===selected):[];
   const selectedChar = selected?getChar(selected):null;
 
+  // ── Hovered connection set (dims unrelated nodes/lines on hover when nothing selected) ──
+  const hoveredConnectedSet = (function(){
+    if(!hoveredChar||selected) return null;
+    const s=new Set([hoveredChar]);
+    rels.forEach(r=>{
+      if(r.from===hoveredChar) s.add(r.to);
+      if(r.to===hoveredChar) s.add(r.from);
+    });
+    return s;
+  })();
+
   // ── Relationship lines ─────────────────────────────────────────────────────
   // Parent rels: group children by their parent-set, draw forked lines.
   // All other rels: simple straight lines.
@@ -1547,8 +1588,12 @@ function App() {
         pNodes.some(function(n){ return n.id===selected; }) ||
         cNodes.some(function(n){ return n.id===selected; })
       );
+      var isHov = hoveredConnectedSet && (
+        pNodes.some(function(n){ return hoveredConnectedSet.has(n.id); }) ||
+        cNodes.some(function(n){ return hoveredConnectedSet.has(n.id); })
+      );
       var sw = isSel ? 2.5 : 1.5;
-      var op = isSel ? 1.0 : 0.6;
+      var op = isSel ? 1.0 : (hoveredConnectedSet&&!isHov) ? 0.08 : 0.6;
 
       var cTopY    = Math.min.apply(null, cNodes.map(function(n){ return n.y; }));
       var pBottomY = Math.max.apply(null, pNodes.map(function(n){ return n.y+NODE_H; }));
@@ -1629,12 +1674,14 @@ function App() {
       if(!f||!t) return;
       var col=RELATION_COLORS[r.type]||"#a0a0a0";
       var isSel=selected&&(f.id===selected||t.id===selected);
+      var isRelHov=hoveredConnectedSet&&(hoveredConnectedSet.has(f.id)||hoveredConnectedSet.has(t.id));
+      var relOp=isSel?1:(hoveredConnectedSet&&!isRelHov)?0.08:0.55;
       var fx=f.x+NODE_W/2, fy=f.y+NODE_H/2, tx=t.x+NODE_W/2, ty=t.y+NODE_H/2;
       var mx=(fx+tx)/2, my=(fy+ty)/2;
       lines.push(h("g",{key:"r-"+r.id, style:{cursor:"pointer"},
         onClick:function(e){e.stopPropagation();setContextMenu({kind:"rel",x:e.clientX,y:e.clientY,rel:r});}},
         h("line",{x1:fx,y1:fy,x2:tx,y2:ty,stroke:col,
-          strokeWidth:isSel?2.5:1.5, strokeOpacity:isSel?1:0.55,
+          strokeWidth:isSel?2.5:1.5, strokeOpacity:relOp,
           strokeDasharray:r.type==="Rival"||r.type==="Enemy"?"6,3":undefined}),
         isSel
           ? h("g",null,
@@ -1696,20 +1743,47 @@ function App() {
     return s;
   })();
 
+  // ── Global search ──────────────────────────────────────────────────────────
+  const globalSearchResults = globalSearch.trim()
+    ? chars.filter(c=>[c.name,c.role,c.faction,c.species].some(v=>v&&v.toLowerCase().includes(globalSearch.toLowerCase()))).slice(0,8)
+    : [];
+  const selectAndJump = id => {
+    setSelected(id); setActivePanel("tree");
+    setShowGlobalSearch(false); setGlobalSearch("");
+    requestAnimationFrame(()=>centerOnChar(id));
+  };
+
+  useEffect(()=>{
+    if(!showGlobalSearch) return;
+    const fn=e=>{if(!e.target.closest(".gs-wrap")){setShowGlobalSearch(false);setGlobalSearch("");}};
+    document.addEventListener("mousedown",fn);
+    return ()=>document.removeEventListener("mousedown",fn);
+  },[showGlobalSearch]);
+
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(function(){
     function onKey(e){
+      const tag=document.activeElement&&document.activeElement.tagName;
+      const inInput=["INPUT","TEXTAREA","SELECT"].includes(tag);
       if(e.key==="Escape"){
+        if(showGlobalSearch){ setShowGlobalSearch(false); setGlobalSearch(""); return; }
         if(linking){ setLinking(null); return; }
         if(showDynPanel){ setShowDynPanel(false); return; }
         if(selected){ setSelected(null); return; }
       }
       if((e.ctrlKey||e.metaKey)&&e.key==="z"&&(preLayoutChars||preDeleteState)){ undoLast(); return; }
       if(e.key==="Escape"&&(showFileMenu||showThemePicker)){ setShowFileMenu(false); setShowThemePicker(false); return; }
+      if(e.key==="Delete"&&selected&&!editingChar&&!confirm&&!linking&&!inInput){
+        e.preventDefault(); deleteChar(selected); return;
+      }
+      if(e.key==="/"&&!e.ctrlKey&&!e.metaKey&&!inInput){
+        e.preventDefault(); setShowGlobalSearch(true);
+        setTimeout(()=>globalSearchRef.current&&globalSearchRef.current.focus(),50); return;
+      }
     }
     window.addEventListener("keydown",onKey);
     return function(){ window.removeEventListener("keydown",onKey); };
-  },[linking,showDynPanel,selected,preLayoutChars,preDeleteState,showFileMenu,showThemePicker]);
+  },[linking,showDynPanel,selected,preLayoutChars,preDeleteState,showFileMenu,showThemePicker,editingChar,confirm,showGlobalSearch]);
 
   // ── Dynasty panel ──────────────────────────────────────────────────────────
   const dynastyPanel = showDynPanel && h("div",{
@@ -1780,6 +1854,29 @@ function App() {
         var p=pair[0],label=pair[1];
         return h("button",{key:p,className:"tab-btn"+(activePanel===p?" active":""),onClick:()=>setActivePanel(p)},label);
       })),
+    // Global search
+    h("div",{className:"gs-wrap",style:{position:"relative",display:"flex",alignItems:"center",marginLeft:4}},
+      showGlobalSearch&&h("div",{style:{position:"absolute",right:0,top:"calc(100% + 6px)",background:"var(--th-card)",border:"1px solid var(--th-border2)",borderRadius:8,zIndex:300,width:280,boxShadow:"0 8px 32px rgba(0,0,0,0.7)",overflow:"hidden"}},
+        h("input",{ref:globalSearchRef,value:globalSearch,onChange:e=>setGlobalSearch(e.target.value),
+          placeholder:"Find character…",
+          style:{borderRadius:"8px 8px 0 0",borderBottom:"1px solid var(--th-border)"},
+          onKeyDown:e=>{
+            if(e.key==="Escape"){setShowGlobalSearch(false);setGlobalSearch("");}
+            if(e.key==="Enter"&&globalSearchResults.length)selectAndJump(globalSearchResults[0].id);
+          }}),
+        globalSearch.trim()&&globalSearchResults.length===0&&h("div",{style:{padding:"10px 14px",fontSize:13,color:"var(--th-bone-dim)",fontStyle:"italic"}},"No characters found"),
+        globalSearchResults.map(c=>h("div",{key:c.id,
+          onMouseDown:e=>{e.preventDefault();selectAndJump(c.id);},
+          style:{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",cursor:"pointer",borderBottom:"1px solid var(--th-border)"},
+          onMouseEnter:e=>e.currentTarget.style.background="var(--th-stone)",
+          onMouseLeave:e=>e.currentTarget.style.background="transparent"},
+          h("div",{style:{width:8,height:8,borderRadius:"50%",background:c.color,flexShrink:0}}),
+          h("div",{style:{flex:1,minWidth:0}},
+            h("div",{style:{fontSize:14,color:"var(--th-bone)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},c.name),
+            (c.role||c.faction)&&h("div",{style:{fontSize:11,color:"var(--th-bone-dim)"}},
+              [c.role,c.faction].filter(Boolean).join(" · ")))))),
+      h("button",{className:"btn muted sm",title:"Find character  (/)",style:{padding:"4px 8px",fontSize:15,lineHeight:1},
+        onClick:()=>{setShowGlobalSearch(s=>!s);if(!showGlobalSearch)setTimeout(()=>globalSearchRef.current&&globalSearchRef.current.focus(),50);}},"🔍")),
     // Theme picker toggle — lives just after the tabs
     h("div",{style:{position:"relative",display:"flex",alignItems:"center",marginLeft:4}},
       h("button",{className:"btn muted sm",onClick:()=>{setShowThemePicker(s=>!s);setShowFileMenu(false);},
@@ -1836,7 +1933,8 @@ function App() {
       h("button",{title:"Zoom out",onClick:()=>setZoom(z=>Math.max(0.2,+(z*0.8).toFixed(2)))},"−"),
       h("button",{className:"zoom-badge",title:"Reset to 100%",onClick:()=>{setZoom(1);setPan({x:40,y:40});}},Math.round(zoom*100)+"%"),
       h("button",{title:"Zoom in",onClick:()=>setZoom(z=>Math.min(3,+(z*1.25).toFixed(2)))},"＋"),
-      h("button",{title:"Fit all characters on screen",onClick:fitToScreen,style:{fontSize:13,paddingLeft:4,borderLeft:"1px solid var(--th-border)",borderRadius:0}},"⤢ Fit")),
+      h("button",{title:"Fit all characters on screen",onClick:fitToScreen,style:{fontSize:13,paddingLeft:4,borderLeft:"1px solid var(--th-border)",borderRadius:0}},"⤢ Fit"),
+      selected&&h("button",{title:"Center view on selected character",onClick:()=>centerOnChar(selected),style:{fontSize:13,paddingLeft:4,borderLeft:"1px solid var(--th-border)",borderRadius:0}},"⊙ Focus")),
     chars.length===0&&h("div",{style:{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",userSelect:"none",gap:14}},
       h("div",{style:{fontSize:48,opacity:0.15}},"✦"),
       h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:18,color:"var(--th-bone-faint)",letterSpacing:"0.06em",opacity:0.5}},"Your tree is empty"),
@@ -1852,9 +1950,11 @@ function App() {
       h("g",{transform:"translate("+pan.x+","+pan.y+") scale("+zoom+")"},
         ...relLines,
         ...chars.map(c=>h(CharNode,{key:c.id,c,selected,linking,onMouseDown:onNodeMouseDown,
-          dimmed:lineageSet!==null&&!lineageSet.has(c.id),
+          dimmed:lineageSet!==null ? !lineageSet.has(c.id) : hoveredConnectedSet!==null&&!hoveredConnectedSet.has(c.id),
           onDoubleClick:c=>setEditingChar({...c}),
-          onContextMenu:(e,c)=>setContextMenu({kind:"char",x:e.clientX,y:e.clientY,char:c})})))));
+          onContextMenu:(e,c)=>setContextMenu({kind:"char",x:e.clientX,y:e.clientY,char:c}),
+          onMouseEnter:id=>setHoveredChar(id),
+          onMouseLeave:()=>setHoveredChar(null)})))));
 
   // ── CHARACTERS PANEL ───────────────────────────────────────────────────────
   const filteredChars = charSearch.trim()
@@ -1999,7 +2099,9 @@ function App() {
             ["2-finger scroll","Pan the canvas"],
             ["Pinch / Ctrl+scroll","Zoom in & out"],
             ["Esc","Deselect / cancel action"],
-            ["Ctrl+Z","Undo auto-arrange"],
+            ["Del","Delete selected character"],
+            ["/","Find character by name"],
+            ["Ctrl+Z","Undo arrange / delete"],
           ].map(function(pair,i){
             return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:9,alignItems:"flex-start"}},
               h("span",{style:{background:"var(--th-stone)",border:"1px solid var(--th-border2)",borderRadius:3,padding:"1px 5px",fontSize:11,fontFamily:"monospace",color:"var(--th-bone-dim)",flexShrink:0,lineHeight:1.6}},pair[0]),
@@ -2041,7 +2143,12 @@ function App() {
     showDynPanel&&h("div",{style:{position:"fixed",inset:0,zIndex:199},onClick:()=>setShowDynPanel(false)}),
     (showFileMenu||showThemePicker)&&h("div",{style:{position:"fixed",inset:0,zIndex:299},onClick:()=>{setShowFileMenu(false);setShowThemePicker(false);}}),
     showWelcome&&h(WelcomePopup,{onClose:()=>setShowWelcome(false)}),
-    toast&&h("div",{key:toast+Date.now(),className:"toast"},toast));
+    toast&&h("div",{key:(typeof toast==="string"?toast:toast.msg)+Date.now(),
+      className:"toast"+(toast.undoFn?" toast-action":""),
+      style:{pointerEvents:toast.undoFn?"all":"none"}},
+      typeof toast==="string"?toast:
+      h(React.Fragment,null,toast.msg,
+        h("button",{className:"toast-undo-btn",onClick:()=>{toast.undoFn();setToast(null);}},"↩ Undo"))));
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(h(App));
