@@ -224,8 +224,11 @@
     .welcome-footer { padding:16px 28px 20px; border-top:1px solid var(--th-border); display:flex; justify-content:center; }
 
     /* Zoom badge */
-    .zoom-badge { position:absolute; bottom:14px; right:16px; background:var(--th-abyss); border:1px solid var(--th-border); color:var(--th-bone-faint); padding:4px 9px; border-radius:5px; font-size:12px; font-family:'Crimson Pro',serif; pointer-events:none; user-select:none; letter-spacing:0.04em; }
-    .zoom-badge:hover { pointer-events:auto; }
+    .zoom-controls { position:absolute; bottom:14px; right:16px; display:flex; align-items:center; gap:3px; background:var(--th-abyss); border:1px solid var(--th-border); border-radius:6px; padding:2px 4px; }
+    .zoom-controls button { background:none; border:none; color:var(--th-bone-faint); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; font-family:'Crimson Pro',serif; line-height:1; transition:color 0.15s,background 0.15s; }
+    .zoom-controls button:hover { color:var(--th-accent2); background:var(--th-accent2)18; }
+    .zoom-badge { background:none; border:none; color:var(--th-bone-faint); padding:3px 7px; font-size:12px; font-family:'Crimson Pro',serif; user-select:none; letter-spacing:0.04em; cursor:pointer; transition:color 0.15s; min-width:40px; text-align:center; }
+    .zoom-badge:hover { color:var(--th-accent2); }
 
     /* Dynasty btn */
     .dyn-btn { background:var(--th-card2); border:1px solid var(--th-border2); color:var(--th-accent2); padding:5px 11px; border-radius:6px; cursor:pointer; font-family:'Crimson Pro',serif; font-size:14px; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s; white-space:nowrap; max-width:180px; flex-shrink:0; }
@@ -436,7 +439,7 @@ function GenderIcon({gender,x,y,col}) {
 }
 
 // ─── SVG CharNode ─────────────────────────────────────────────────────────────
-function CharNode({c,selected,linking,onMouseDown,onDoubleClick,onContextMenu}) {
+function CharNode({c,selected,linking,dimmed,onMouseDown,onDoubleClick,onContextMenu}) {
   const isSel=selected===c.id, isLnk=linking===c.id, cx=NODE_W/2;
   const rows=[];
   if(c.titles) rows.push({text:trunc(c.titles,22),color:c.color,size:11,italic:true});
@@ -465,7 +468,7 @@ function CharNode({c,selected,linking,onMouseDown,onDoubleClick,onContextMenu}) 
   }
   ch.push(h("text",{key:"nm",x:cx,y:HEADER_H/2,textAnchor:"middle",dominantBaseline:"central",fontSize:13,fontWeight:"700",fill:"var(--th-bone)",fontFamily:"'Cinzel Decorative',serif",style:{userSelect:"none",pointerEvents:"none"}},trunc(c.name,15)));
   rows.forEach((row,i)=>ch.push(h("text",{key:"r"+i,x:cx,y:HEADER_H+sp*(i+1),textAnchor:"middle",dominantBaseline:"central",fontSize:row.size,fill:row.color,fontStyle:row.italic?"italic":"normal",fontFamily:"'Crimson Pro',serif",style:{userSelect:"none",pointerEvents:"none"}},row.text)));
-  return h("g",{style:{cursor:linking?"crosshair":"grab"},transform:"translate("+c.x+","+c.y+")",
+  return h("g",{style:{cursor:linking?"crosshair":"grab",opacity:dimmed?0.22:1,transition:"opacity 0.15s"},transform:"translate("+c.x+","+c.y+")",
     onMouseDown:e=>onMouseDown(e,c.id),
     onDoubleClick:e=>{e.stopPropagation();onDoubleClick(c);},
     onContextMenu:e=>{e.preventDefault();e.stopPropagation();if(onContextMenu)onContextMenu(e,c);}
@@ -473,7 +476,7 @@ function CharNode({c,selected,linking,onMouseDown,onDoubleClick,onContextMenu}) 
 }
 
 // ─── Context Menu ─────────────────────────────────────────────────────────────
-function ContextMenu({menu,onClose,onChangeRelType,onDeleteRel,onDeleteChar,onEditChar}) {
+function ContextMenu({menu,onClose,onChangeRelType,onDeleteRel,onDeleteChar,onEditChar,onCopyChar}) {
   useEffect(()=>{ const fn=()=>onClose(); document.addEventListener("mousedown",fn); return()=>document.removeEventListener("mousedown",fn); },[]);
   if(menu.kind==="rel") return h("div",{className:"ctx-menu",style:{left:menu.x,top:menu.y},onMouseDown:e=>e.stopPropagation()},
     h("span",{className:"ctx-label"},"Change Link Type"),
@@ -487,9 +490,78 @@ function ContextMenu({menu,onClose,onChangeRelType,onDeleteRel,onDeleteChar,onEd
   return h("div",{className:"ctx-menu",style:{left:menu.x,top:menu.y},onMouseDown:e=>e.stopPropagation()},
     h("span",{className:"ctx-label"},menu.char.name),
     h("button",{className:"ctx-item",onClick:()=>{onEditChar(menu.char);onClose();}},"✎ Edit Character"),
+    h("button",{className:"ctx-item",onClick:()=>{onCopyChar(menu.char.id);onClose();}},"⧉ Duplicate Character"),
     h("hr",{className:"ctx-sep"}),
     h("button",{className:"ctx-item danger",onClick:()=>{onDeleteChar(menu.char.id);onClose();}},"🗑 Delete Character"));
 }
+
+// ─── Traits Modal ─────────────────────────────────────────────────────────────
+function TraitsModal({charName, disorders, onSave, onClose}) {
+  const [dis,setDis]         = useState([...disorders]);
+  const [nd,setNd]           = useState({name:"",hereditary:false,status:"Affected"});
+  const [editIdx,setEditIdx] = useState(null);
+  return h("div",{className:"modal-overlay",style:{zIndex:300}},
+    h("div",{className:"modal-box"},
+      h("div",{className:"modal-header"},
+        h("span",null,"⚕ Genetic Traits — "+(charName||"Character")),
+        h("button",{className:"btn ghost xs",onClick:onClose},"✕")),
+      h("div",{className:"modal-body"},
+        h("div",{className:"form-section"},
+          dis.length>0 && h("div",{style:{marginBottom:12}},
+            dis.map((d,i)=>{
+              const dc=DISORDER_STATUS_COLORS[d.status]||"#909090", isEd=editIdx===i;
+              return h("div",{key:i,style:{background:"var(--th-card2)",border:"1px solid var(--th-border)",borderLeft:"3px solid "+dc,borderRadius:6,padding:"10px 12px",marginBottom:8}},
+                isEd
+                  ? h("div",{style:{display:"flex",flexDirection:"column",gap:8}},
+                      h("input",{value:d.name,placeholder:"Trait name",disabled:d.source==="inherited",
+                        onChange:e=>setDis(arr=>arr.map((x,j)=>j===i?{...x,name:e.target.value}:x)),
+                        style:{marginTop:0,opacity:d.source==="inherited"?0.55:1}}),
+                      h("div",null,
+                        h("label",{className:"field-label",style:{marginTop:0}},"Status"),
+                        h("select",{value:d.status,onChange:e=>setDis(arr=>arr.map((x,j)=>j===i?{...x,status:e.target.value,source:d.source==="inherited"?"manual-override":d.source}:x))},
+                          ...DISORDER_STATUS.map(s=>h("option",{key:s,value:s},s)))),
+                      d.source!=="inherited" && h("div",{className:"h-toggle"+(d.hereditary?" on":""),
+                        onClick:()=>setDis(arr=>arr.map((x,j)=>j===i?{...x,hereditary:!x.hereditary}:x))},
+                        h("div",{className:"h-pip"}),
+                        h("span",{style:{fontSize:14,color:d.hereditary?"var(--th-accent-hi)":"var(--th-bone-dim)"}},
+                          d.hereditary?"Hereditary — passes to all children":"Non-hereditary")),
+                      (d.source==="inherited"||d.source==="manual-override") && h("div",{style:{fontSize:12,color:d.source==="manual-override"?"var(--th-accent2)":"var(--th-accent1)",fontStyle:"italic"}},
+                        d.source==="manual-override"?"✓ Status overridden — saving will keep your value":"↯ Inherited from parent — change the Status above to override"),
+                      h("div",{style:{display:"flex",justifyContent:"flex-end",marginTop:4}},
+                        h("button",{className:"btn xs ghost",onClick:()=>setEditIdx(null)},"Done")))
+                  : h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                      h("div",{style:{flex:1,minWidth:0}},
+                        h("div",{style:{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}},
+                          h("span",{style:{fontSize:14,color:"var(--th-bone)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},d.name||"Unnamed"),
+                          d.source==="inherited" && h("span",{title:"Auto-inherited from a parent. Click Edit to override the status.",style:{fontSize:10,color:"var(--th-accent1)",border:"1px solid var(--th-accent1)",borderRadius:3,padding:"1px 5px",letterSpacing:"0.06em",flexShrink:0,cursor:"help"}},"↯ INHERITED"),
+                          d.hereditary&&d.source!=="inherited" && h("span",{style:{fontSize:10,color:"var(--th-accent2)",border:"1px solid var(--th-accent2)",borderRadius:3,padding:"1px 5px",letterSpacing:"0.06em",flexShrink:0}},"↓ HEREDITARY")),
+                        h("div",{style:{fontSize:12,color:dc,fontWeight:600,marginTop:2}},d.status)),
+                      h("button",{className:"btn xs ghost",onClick:()=>setEditIdx(i),style:{flexShrink:0}},"Edit"),
+                      h("button",{className:"btn xs danger",onClick:()=>{setDis(arr=>arr.filter((_,j)=>j!==i));if(editIdx===i)setEditIdx(null);},style:{flexShrink:0}},"✕")));
+            })),
+          h("div",{style:{background:"var(--th-card2)",border:"1px solid var(--th-border)",borderRadius:6,padding:"10px 12px"}},
+            h("div",{style:{fontSize:12,color:"var(--th-bone-dim)",marginBottom:8,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}},
+              dis.length===0?"No traits recorded — add one below":"Add another trait"),
+            h("input",{value:nd.name,placeholder:"Trait name (e.g. Crimson Fever, Frostblood)",
+              onChange:e=>setNd(p=>({...p,name:e.target.value})),style:{marginBottom:8}}),
+            h("div",{style:{marginBottom:8}},
+              h("label",{className:"field-label",style:{marginTop:0}},"Status"),
+              h("select",{value:nd.status,onChange:e=>setNd(p=>({...p,status:e.target.value}))},
+                ...DISORDER_STATUS.map(s=>h("option",{key:s,value:s},s)))),
+            h("div",{className:"h-toggle"+(nd.hereditary?" on":""),onClick:()=>setNd(p=>({...p,hereditary:!p.hereditary})),style:{marginBottom:10}},
+              h("div",{className:"h-pip"}),
+              h("span",{style:{fontSize:14,color:nd.hereditary?"var(--th-accent-hi)":"var(--th-bone-dim)"}},
+                nd.hereditary?"Hereditary — will pass to all children":"Non-hereditary")),
+            h("button",{className:"btn sm",disabled:!nd.name.trim(),style:{opacity:nd.name.trim()?1:0.45},
+              onClick:()=>{
+                if(!nd.name.trim()) return;
+                setDis(arr=>[...arr,{...nd,name:nd.name.trim()}]);
+                setNd({name:"",hereditary:false,status:"Affected"});
+              }},"+ Add Trait")))),
+      h("div",{className:"modal-footer"},
+        h("div",{style:{flex:1}}),
+        h("button",{className:"btn ghost",onClick:onClose},"Cancel"),
+        h("button",{className:"btn",onClick:()=>onSave(dis)},"✓ Save Traits"))));}
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,onAddRel,onDeleteRel}) {
@@ -498,8 +570,9 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
   const [nrtg,setNrtg] = useState("");
   const [nrtgName,setNrtgName] = useState("");
   const [nrtgOpen,setNrtgOpen] = useState(false);
-  const [nd,setNd]   = useState({name:"",hereditary:false,status:"Affected"});
-  const [editIdx,setEditIdx] = useState(null);
+  const [showAllTypes,setShowAllTypes]     = useState(false);
+  const [showTraitsModal,setShowTraitsModal] = useState(false);
+  const [showRole,setShowRole]             = useState(()=>!!(char.role||char.titles||char.faction));
   const set = (k,v) => setEc(p=>({...p,[k]:v}));
   const setDis = fn => setEc(p=>({...p,disorders:fn(p.disorders||[])}));
 
@@ -541,8 +614,11 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
 
         // Role
         h("div",{className:"form-section"},
-          h("div",{className:"form-section-title"},"⚔ Role & Allegiance"),
-          h("div",{className:"form-grid"},
+          h("div",{className:"form-section-title",style:{cursor:"pointer",userSelect:"none",display:"flex",justifyContent:"space-between",alignItems:"center"},
+            onClick:()=>setShowRole(s=>!s)},
+            "⚔ Role & Allegiance",
+            h("span",{style:{fontSize:12,color:"var(--th-bone-dim)",fontWeight:400,marginLeft:8}},showRole?"▾ hide":"▸ show")),
+          showRole&&h("div",{className:"form-grid"},
             h("div",null,h("label",{className:"field-label"},"Role / Class"),h("input",{value:ec.role,onChange:e=>set("role",e.target.value),placeholder:"e.g. King, Wizard"})),
             h("div",null,h("label",{className:"field-label"},"Titles"),h("input",{value:ec.titles,onChange:e=>set("titles",e.target.value),placeholder:"e.g. Lord of the North"})),
             h("div",{className:"form-full"},h("label",{className:"field-label"},"Faction / House"),h("input",{value:ec.faction,onChange:e=>set("faction",e.target.value),placeholder:"e.g. House Stark"})))),
@@ -606,9 +682,12 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
                 )
               ),
               h("button",{className:"btn sm",onClick:()=>{if(nrtg){onAddRel(char.id,nrtg,nrt);setNrtg("");setNrtgName("");}},disabled:!nrtg,style:{opacity:nrtg?1:0.45,flexShrink:0}},"+ Add")),
-            h("div",{style:{marginTop:10}},
-              h("label",{className:"field-label",style:{marginTop:0}},"All types"),
-              h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}},
+            nrt==="Child"&&h("div",{style:{fontSize:12,color:"var(--th-accent2)",fontStyle:"italic",marginTop:6}},
+              "This character will be added as the child of the selected character."),
+            h("div",{style:{marginTop:8}},
+              h("button",{onClick:()=>setShowAllTypes(s=>!s),style:{background:"none",border:"none",color:"var(--th-bone-dim)",cursor:"pointer",fontSize:12,padding:"2px 0",fontFamily:"'Crimson Pro',serif",letterSpacing:"0.04em"}},
+                (showAllTypes?"▾ ":"▸ ")+"More relationship types"),
+              showAllTypes&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
                 ...RELATIONSHIP_TYPES.map(type=>{
                   const active=nrt===type,col=RELATION_COLORS[type]||"#a0a0a0";
                   return h("button",{key:type,onClick:()=>setNrt(type),style:{background:active?col+"22":"transparent",border:"1px solid "+(active?col:"var(--th-border)"),color:active?col:"var(--th-bone-dim)",padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'Crimson Pro',serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}},type);
@@ -631,70 +710,21 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
         // ── Genetic Traits ──────────────────────────────────────────────
         h("div",{className:"form-section"},
           h("div",{className:"form-section-title"},"⚕ Genetic Traits"),
-
-          // Existing disorders
-          (ec.disorders||[]).length>0 && h("div",{style:{marginBottom:12}},
-            (ec.disorders||[]).map((d,i)=>{
-              const dc=DISORDER_STATUS_COLORS[d.status]||"#909090", isEd=editIdx===i;
-              return h("div",{key:i,style:{background:"var(--th-card2)",border:"1px solid var(--th-border)",borderLeft:"3px solid "+dc,borderRadius:6,padding:"10px 12px",marginBottom:8}},
-                isEd
-                  ? h("div",{style:{display:"flex",flexDirection:"column",gap:8}},
-                      h("input",{value:d.name,placeholder:"Trait name",disabled:d.source==="inherited",
-                        onChange:e=>setDis(arr=>arr.map((x,j)=>j===i?{...x,name:e.target.value}:x)),
-                        style:{marginTop:0,opacity:d.source==="inherited"?0.55:1}}),
-                      h("div",null,
-                        h("label",{className:"field-label",style:{marginTop:0}},"Status"),
-                        h("select",{value:d.status,onChange:e=>setDis(arr=>arr.map((x,j)=>j===i?{...x,status:e.target.value,source:d.source==="inherited"?"manual-override":d.source}:x))},
-                          ...DISORDER_STATUS.map(s=>h("option",{key:s,value:s},s)))),
-                      // Hereditary toggle — hidden for inherited entries (always hereditary)
-                      d.source!=="inherited" && h("div",{className:"h-toggle"+(d.hereditary?" on":""),
-                        onClick:()=>setDis(arr=>arr.map((x,j)=>j===i?{...x,hereditary:!x.hereditary}:x))},
-                        h("div",{className:"h-pip"}),
-                        h("span",{style:{fontSize:14,color:d.hereditary?"var(--th-accent-hi)":"var(--th-bone-dim)"}},
-                          d.hereditary?"Hereditary — passes to all children":"Non-hereditary")),
-                      d.source==="inherited" && h("div",{style:{fontSize:12,color:"var(--th-accent1)",fontStyle:"italic"}},
-                        "↯ Inherited from parent — change status to override"),
-                      h("div",{style:{display:"flex",justifyContent:"flex-end",marginTop:4}},
-                        h("button",{className:"btn xs ghost",onClick:()=>setEditIdx(null)},"Done")))
-                  : h("div",{style:{display:"flex",alignItems:"center",gap:8}},
-                      h("div",{style:{flex:1,minWidth:0}},
-                        h("div",{style:{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}},
-                          h("span",{style:{fontSize:14,color:"var(--th-bone)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},d.name||"Unnamed"),
-                          d.source==="inherited" && h("span",{style:{fontSize:10,color:"var(--th-accent1)",border:"1px solid var(--th-accent1)",borderRadius:3,padding:"1px 5px",letterSpacing:"0.06em",flexShrink:0}},"↯ INHERITED"),
-                          d.hereditary&&d.source!=="inherited" && h("span",{style:{fontSize:10,color:"var(--th-accent2)",border:"1px solid var(--th-accent2)",borderRadius:3,padding:"1px 5px",letterSpacing:"0.06em",flexShrink:0}},"↓ HEREDITARY")),
-                        h("div",{style:{fontSize:12,color:dc,fontWeight:600,marginTop:2}},d.status)),
-                      h("button",{className:"btn xs ghost",onClick:()=>setEditIdx(i),style:{flexShrink:0}},"Edit"),
-                      h("button",{className:"btn xs danger",onClick:()=>{setDis(arr=>arr.filter((_,j)=>j!==i));if(editIdx===i)setEditIdx(null);},style:{flexShrink:0}},"✕")));
-            })),
-
-          // Add new disorder
-          h("div",{style:{background:"var(--th-card2)",border:"1px solid var(--th-border)",borderRadius:6,padding:"10px 12px"}},
-            h("div",{style:{fontSize:12,color:"var(--th-bone-dim)",marginBottom:8,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}},
-              (ec.disorders||[]).length===0?"No traits recorded — add one below":"Add another trait"),
-            h("input",{value:nd.name,placeholder:"Trait name (e.g. Crimson Fever, Frostblood)",
-              onChange:e=>setNd(p=>({...p,name:e.target.value})),style:{marginBottom:8}}),
-            h("div",{style:{marginBottom:8}},
-              h("label",{className:"field-label",style:{marginTop:0}},"Status"),
-              h("select",{value:nd.status,onChange:e=>setNd(p=>({...p,status:e.target.value}))},
-                ...DISORDER_STATUS.map(s=>h("option",{key:s,value:s},s)))),
-            h("div",{className:"h-toggle"+(nd.hereditary?" on":""),onClick:()=>setNd(p=>({...p,hereditary:!p.hereditary})),style:{marginBottom:10}},
-              h("div",{className:"h-pip"}),
-              h("span",{style:{fontSize:14,color:nd.hereditary?"var(--th-accent-hi)":"var(--th-bone-dim)"}},
-                nd.hereditary?"Hereditary — will pass to all children":"Non-hereditary")),
-            h("button",{className:"btn sm",disabled:!nd.name.trim(),style:{opacity:nd.name.trim()?1:0.45},
-              onClick:()=>{
-                if(!nd.name.trim()) return;
-                setDis(arr=>[...arr,{...nd,name:nd.name.trim()}]);
-                setNd({name:"",hereditary:false,status:"Affected"});
-              }},"+ Add Trait")))
+          h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,gap:12}},
+            h("span",{style:{fontSize:14,color:"var(--th-bone-dim)",flex:1}},
+              (ec.disorders||[]).length===0 ? "No traits recorded."
+                : (ec.disorders||[]).length+" trait"+((ec.disorders||[]).length!==1?"s":"")+" recorded."),
+            h("button",{className:"btn sm",onClick:()=>setShowTraitsModal(true)},
+              "⚕ Edit Traits"+((ec.disorders||[]).length?" ("+(ec.disorders||[]).length+")":""))))
       ),
 
       h("div",{className:"modal-footer"},
         h("button",{className:"btn danger",onClick:()=>onDelete(ec.id)},"🗑 Delete"),
         h("div",{style:{flex:1}}),
         h("button",{className:"btn ghost",onClick:onClose},"Cancel"),
-        h("button",{className:"btn",onClick:()=>onSave(ec)},"✓ Save Character"))));
-}
+        h("button",{className:"btn",onClick:()=>onSave(ec),disabled:!(ec.name&&ec.name.trim()),style:{opacity:(ec.name&&ec.name.trim())?1:0.45}},"✓ Save Character")),
+    showTraitsModal&&h(TraitsModal,{charName:ec.name||"Character",disorders:ec.disorders||[],onSave:(newDis)=>{setDis(()=>newDis);setShowTraitsModal(false);},onClose:()=>setShowTraitsModal(false)})));}
+
 
 // ─── Welcome Popup ────────────────────────────────────────────────────────────
 const WELCOME_KEY = "lineage_last_welcome";
@@ -727,7 +757,63 @@ function WelcomePopup({onClose}){
         h("button",{className:"btn",onClick:onClose,style:{minWidth:140}},"Start Building ✦"))));
 }
 
+// ─── Sidebar Character Panel ──────────────────────────────────────────────────
+function SidebarCharPanel({char, allChars, genDepths, selectedRels, onSave, onDelete, onDeleteRel, onSelectChar, onEdit}) {
+  const [notes,setNotes] = useState(char.notes||"");
+  useEffect(()=>{ setNotes(char.notes||""); },[char.id]);
+  const getChar = id => allChars.find(c=>c.id===id);
+  const handleNotesBlur = () => { if(notes!==(char.notes||"")) onSave({...char,notes}); };
+  return h(React.Fragment,null,
+    h("div",{className:"sidebar-char-header"},
+      h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
+        h("div",{style:{width:5,minHeight:44,borderRadius:3,background:char.color,flexShrink:0,alignSelf:"stretch"}}),
+        h("div",{style:{flex:1,minWidth:0}},
+          h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:14,color:"var(--th-bone)",lineHeight:1.4,wordBreak:"break-word"}},char.name),
+          char.titles&&h("div",{style:{fontSize:12,color:char.color,fontStyle:"italic",marginTop:3}},char.titles))),
+      h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:10,alignItems:"center"}},
+        h("select",{value:char.status,onChange:e=>onSave({...char,status:e.target.value}),
+          style:{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+statusColor(char.status),
+            color:statusColor(char.status),background:statusColor(char.status)+"18",
+            cursor:"pointer",fontFamily:"'Crimson Pro',serif",fontWeight:600}},
+          ...STATUS_OPTIONS.map(s=>h("option",{key:s,value:s},s))),
+        char.species&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},char.species),
+        char.age&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},"Age "+char.age),
+        char.role&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},char.role),
+        char.faction&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},char.faction),
+        h("span",{className:"tag",style:{borderColor:"var(--th-accent1)",color:"var(--th-accent1)",background:"var(--th-accent1)"+"18"}},"Generation "+(genDepths[char.id]||0)))),
+    h("div",{className:"sidebar-body"},
+      h("span",{className:"section-title"},"✐ Notes"),
+      h("textarea",{value:notes,rows:4,placeholder:"Backstory, notes, secrets…",
+        onChange:e=>setNotes(e.target.value),onBlur:handleNotesBlur,
+        style:{fontSize:13,marginTop:6,lineHeight:1.55,resize:"vertical"}}),
+      h("hr",{className:"divider"}),
+      h("span",{className:"section-title"},"⇔ Relationships ("+selectedRels.length+")"),
+      selectedRels.length===0
+        ? h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",fontStyle:"italic",padding:"4px 0"}},"None yet — use ⇔ Link to connect.")
+        : selectedRels.map(r=>{
+            const other=getChar(r.from===char.id?r.to:r.from); if(!other) return null;
+            const isFrom=r.from===char.id;
+            const relLabel=r.type==="Parent"?(isFrom?"Parent Of":"Child Of"):r.type;
+            const col=RELATION_COLORS[r.type]||"#a0a0a0";
+            return h("div",{key:r.id,style:{display:"flex",alignItems:"center",gap:7,padding:"6px 0",borderBottom:"1px solid var(--th-border)"}},
+              h("span",{className:"tag",style:{borderColor:col,color:col,fontSize:11,flexShrink:0,background:col+"18"}},relLabel),
+              h("span",{style:{fontSize:14,flex:1,cursor:"pointer",color:"var(--th-bone)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textDecoration:"underline",textDecorationColor:"var(--th-border2)"},onClick:()=>onSelectChar(other.id)},other.name),
+              h("button",{className:"btn xs danger",onClick:()=>onDeleteRel(r.id),style:{padding:"2px 6px",flexShrink:0}},"✕"));
+          }).filter(Boolean),
+      h("hr",{className:"divider"}),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{className:"btn",style:{flex:1},onClick:()=>onEdit(char)},"✎ Edit"),
+        h("button",{className:"btn danger",onClick:()=>onDelete(char.id)},"🗑"))));}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
+const THEMES=[
+  {id:"default",    label:"Necromancer",desc:"Dark gold on black parchment",  swatches:["#18140e","#c9a227","#3a2e18","#f0e4cc"]},
+  {id:"castlevania",label:"Castlevania", desc:"Arcane purple & spectral blue", swatches:["#060408","#c070f8","#3a2e60","#ede8ff"]},
+  {id:"vampire",    label:"Vampire",     desc:"Blood crimson and pale gold",   swatches:["#080204","#ff3860","#3a1820","#fff4ec"]},
+  {id:"dungeon",    label:"Dungeon",     desc:"Mossy green in cavern dark",    swatches:["#060c08","#48b870","#1e3828","#d8f0c8"]},
+  {id:"escape",     label:"The Escape",  desc:"Stark monochrome noir",         swatches:["#080808","#d8d8d8","#2a2a2a","#eeeeee"]},
+];
+
 function App() {
   const [dynasties,setDynastiesState] = useState(()=>initDynasties());
   const [activeDynId,setActiveDynId]  = useState(()=>{
@@ -772,7 +858,12 @@ function App() {
   const [contextMenu,setContextMenu] = useState(null);
   const [theme,setTheme]       = useState(()=>localStorage.getItem("lineage_theme")||"default");
   const [preLayoutChars,setPreLayoutChars] = useState(null);
+  const [preDeleteState,setPreDeleteState] = useState(null);
+  const [charSearch,setCharSearch]         = useState("");
+  const [showFileMenu,setShowFileMenu]     = useState(false);
+  const [showThemePicker,setShowThemePicker] = useState(false);
   const [showWelcome,setShowWelcome]       = useState(()=>shouldShowWelcome());
+  const [relTypeFilter,setRelTypeFilter]   = useState("All");
 
   const svgRef=useRef(null), panRef=useRef(false), toastRef=useRef(null), fileRef=useRef(null);
 
@@ -873,13 +964,30 @@ function App() {
   };
 
   const saveChar = updated => {
-    setChars(prev=>propagateDisorders(prev.map(c=>c.id===updated.id?updated:c), rels));
+    if(!updated.name||!updated.name.trim()){ showToast("Name cannot be empty"); return; }
+    setChars(prev=>propagateDisorders(prev.map(c=>c.id===updated.id?{...updated,name:updated.name.trim()}:c), rels));
     setEditingChar(null); showToast("✓ Character saved");
+  };
+  const quickSave = updated => {
+    if(!updated.name||!updated.name.trim()) return;
+    setChars(prev=>propagateDisorders(prev.map(c=>c.id===updated.id?updated:c), rels));
+  };
+  const fitToScreen = () => {
+    if(!chars.length||!svgRef.current) return;
+    const {width,height}=svgRef.current.getBoundingClientRect();
+    const pad=60;
+    const minX=Math.min(...chars.map(c=>c.x)), minY=Math.min(...chars.map(c=>c.y));
+    const maxX=Math.max(...chars.map(c=>c.x+NODE_W)), maxY=Math.max(...chars.map(c=>c.y+NODE_H));
+    const treeW=maxX-minX, treeH=maxY-minY;
+    const nz=Math.min(3,Math.max(0.2,Math.min((width-pad*2)/treeW,(height-pad*2)/treeH)));
+    setZoom(nz);
+    setPan({x:(width-treeW*nz)/2-minX*nz, y:(height-treeH*nz)/2-minY*nz});
   };
 
   const deleteChar = id => askConfirm("Delete Character",
-    "This will also remove all relationships involving this character. This cannot be undone.",
+    "This will also remove all relationships involving this character.",
     ()=>{
+      setPreDeleteState({chars,rels});
       const nr=rels.filter(r=>r.from!==id&&r.to!==id);
       setChars(prev=>propagateDisorders(prev.filter(c=>c.id!==id),nr));
       setRels(nr);
@@ -887,13 +995,51 @@ function App() {
       setEditingChar(null); setConfirm(null); showToast("Character deleted");
     }, "Delete");
 
+  const undoDelete = () => {
+    if(!preDeleteState) return;
+    setChars(preDeleteState.chars); setRels(preDeleteState.rels);
+    setPreDeleteState(null); showToast("↩ Deletion undone");
+  };
+
+  const undoLabel = preDeleteState ? "↩ Undo Delete" : preLayoutChars ? "↩ Undo Arrange" : null;
+  const undoLast  = () => { if(preDeleteState) undoDelete(); else if(preLayoutChars) undoLayout(); };
+
+  const copyChar = id => {
+    const orig=getChar(id); if(!orig) return;
+    const c={...orig,id:uid(),name:orig.name+" (Copy)",x:orig.x+NODE_W+20,y:orig.y,
+      disorders:(orig.disorders||[]).filter(d=>d.source!=="inherited")};
+    setChars(p=>[...p,c]); setSelected(c.id); showToast("✦ Character duplicated");
+  };
+
+  const exportSVG = () => {
+    const svg=svgRef.current; if(!svg) return;
+    const st=getComputedStyle(document.documentElement);
+    const vars=['--th-void','--th-card','--th-card2','--th-stone','--th-abyss',
+      '--th-border','--th-border2','--th-bone','--th-bone-dim','--th-bone-faint',
+      '--th-accent1','--th-accent2','--th-accent-hi'].map(v=>v+':'+st.getPropertyValue(v)).join(';');
+    const clone=svg.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    const style=document.createElementNS('http://www.w3.org/2000/svg','style');
+    style.textContent=':root{'+vars+'}';
+    clone.insertBefore(style,clone.firstChild);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([clone.outerHTML],{type:'image/svg+xml'}));
+    a.download=treeName.replace(/\s+/g,'_')+'.svg'; a.click(); showToast("↓ Saved as SVG");
+  };
+
   const addRel = (fromId,toId,type) => {
     // Normalize: "Child" means fromId is the child, toId is the parent — flip to store as Parent
     var actualFrom=fromId, actualTo=toId, actualType=type;
     if(type==="Child"){ actualFrom=toId; actualTo=fromId; actualType="Parent"; }
 
-    if(rels.find(r=>(r.from===actualFrom&&r.to===actualTo)||(r.from===actualTo&&r.to===actualFrom))) return;
-    if(actualFrom===actualTo) return;
+    if(actualFrom===actualTo){ showToast("A character cannot be linked to themselves"); return; }
+    if(rels.find(r=>(r.from===actualFrom&&r.to===actualTo)||(r.from===actualTo&&r.to===actualFrom))){ showToast("These characters are already linked"); return; }
+    if(actualType==="Parent"){
+      // Guard against circular lineages (e.g. A→B→A)
+      var cycleQ=[actualTo],cycleSeen=new Set();
+      while(cycleQ.length){ var cur=cycleQ.shift(); if(cycleSeen.has(cur)) continue; cycleSeen.add(cur); rels.forEach(function(r){ if(r.type==="Parent"&&r.from===cur) cycleQ.push(r.to); }); }
+      if(cycleSeen.has(actualFrom)){ showToast("Cannot add: this would create a circular lineage"); return; }
+    }
     const nr=[...rels,{id:"r_"+Date.now(),from:actualFrom,to:actualTo,type:actualType}];
     setRels(nr);
     setChars(prev=>{
@@ -903,6 +1049,8 @@ function App() {
         if(a&&b&&(Math.abs(a.y-b.y)>=NODE_H*.6||Math.abs(a.x-b.x)<=NODE_W+20)){
           const midY=(a.y+b.y)/2,[left,right]=a.x<=b.x?[a,b]:[b,a];
           next=prev.map(c=>c.id===left.id?{...c,y:midY}:c.id===right.id?{...c,x:left.x+NODE_W+40,y:midY}:c);
+        } else {
+          showToast("Tip: use ✦ Arrange to align spouses side by side");
         }
       }
       return actualType==="Parent"?propagateDisorders(next,nr):next;
@@ -942,7 +1090,7 @@ function App() {
     const r=new FileReader();
     r.onload=ev=>{
       try{
-        var d=JSON.parse(ev.target.result);
+        var d; try{ d=JSON.parse(ev.target.result); }catch(e){ showToast("Import failed: not a valid JSON file"); return; }
         if(d.chars&&d.rels){
           // Import as a brand new dynasty
           var id="dyn_"+Date.now();
@@ -961,7 +1109,7 @@ function App() {
           setPan({x:40,y:40});
           setZoom(1);
           showToast("↑ Imported as new dynasty");
-        }
+        } else { showToast("Import failed: missing 'chars' or 'rels' — is this a .lineage file?"); }
       }catch(err){showToast("Import failed");}
     };
     r.readAsText(file); e.target.value="";
@@ -1287,8 +1435,8 @@ function App() {
   const onMouseMove = e => {
     if(dragging){
       const sr=svgRef.current.getBoundingClientRect();
-      var rawX=(e.clientX-sr.left)/zoom-pan.x/zoom-dragOffset.x;
-      var rawY=(e.clientY-sr.top)/zoom-pan.y/zoom-dragOffset.y;
+      var rawX=Math.max(0,(e.clientX-sr.left)/zoom-pan.x/zoom-dragOffset.x);
+      var rawY=Math.max(0,(e.clientY-sr.top)/zoom-pan.y/zoom-dragOffset.y);
 
       // Snap Y: if within SNAP_Y pixels of another card's Y, snap to it
       var SNAP_Y=18;
@@ -1468,11 +1616,17 @@ function App() {
         h("line",{x1:fx,y1:fy,x2:tx,y2:ty,stroke:col,
           strokeWidth:isSel?2.5:1.5, strokeOpacity:isSel?1:0.55,
           strokeDasharray:r.type==="Rival"||r.type==="Enemy"?"6,3":undefined}),
-        isSel&&h("g",null,
-          h("circle",{cx:mx,cy:my,r:8,fill:"var(--th-abyss)",stroke:col,strokeWidth:1.5}),
-          h("text",{x:mx,y:my,textAnchor:"middle",dominantBaseline:"central",
-            fontSize:11,fill:col,fontWeight:"700",
-            style:{userSelect:"none",pointerEvents:"none"}},"✕"))
+        isSel
+          ? h("g",null,
+              h("circle",{cx:mx,cy:my,r:8,fill:"var(--th-abyss)",stroke:col,strokeWidth:1.5}),
+              h("text",{x:mx,y:my,textAnchor:"middle",dominantBaseline:"central",
+                fontSize:11,fill:col,fontWeight:"700",
+                style:{userSelect:"none",pointerEvents:"none"}},"✕"))
+          : h("g",null,
+              h("rect",{x:mx-22,y:my-8,width:44,height:16,rx:4,fill:"var(--th-abyss)",opacity:0.82}),
+              h("text",{x:mx,y:my,textAnchor:"middle",dominantBaseline:"central",
+                fontSize:9,fill:col,fontWeight:"600",letterSpacing:"0.03em",
+                style:{userSelect:"none",pointerEvents:"none"}},r.type))
       ));
     });
 
@@ -1506,6 +1660,21 @@ function App() {
     return depths;
   })();
 
+  // ── Lineage set: all ancestors & descendants of the selected character ──────
+  const lineageSet = (function(){
+    if(!selected) return null;
+    var s=new Set([selected]), q=[selected], vis=new Set();
+    while(q.length){
+      var id=q.shift(); if(vis.has(id)) continue; vis.add(id);
+      rels.forEach(function(r){
+        if(r.type==="Parent"){
+          if(r.to===id&&!s.has(r.from)){ s.add(r.from); q.push(r.from); }  // ancestor
+          if(r.from===id&&!s.has(r.to)){ s.add(r.to);   q.push(r.to);   }  // descendant
+        }
+      });
+    }
+    return s;
+  })();
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(function(){
@@ -1515,11 +1684,12 @@ function App() {
         if(showDynPanel){ setShowDynPanel(false); return; }
         if(selected){ setSelected(null); return; }
       }
-      if((e.ctrlKey||e.metaKey)&&e.key==="z"&&preLayoutChars){ undoLayout(); return; }
+      if((e.ctrlKey||e.metaKey)&&e.key==="z"&&(preLayoutChars||preDeleteState)){ undoLast(); return; }
+      if(e.key==="Escape"&&(showFileMenu||showThemePicker)){ setShowFileMenu(false); setShowThemePicker(false); return; }
     }
     window.addEventListener("keydown",onKey);
     return function(){ window.removeEventListener("keydown",onKey); };
-  },[linking,showDynPanel,selected,preLayoutChars]);
+  },[linking,showDynPanel,selected,preLayoutChars,preDeleteState,showFileMenu,showThemePicker]);
 
   // ── Dynasty panel ──────────────────────────────────────────────────────────
   const dynastyPanel = showDynPanel && h("div",{
@@ -1586,10 +1756,27 @@ function App() {
     h("div",{className:"tb-sep"}),
     // Panel tabs
     h("div",{style:{display:"flex",height:"100%",alignItems:"stretch",flexShrink:0}},
-      ...[["tree","🗺 Tree"],["characters","👤 Characters"],["relationships","⇔ Links"],["disorders","⚕ Traits"],["themes","🎨 Themes"]].map(function(pair){
+      ...[["tree","🗺 Tree"],["characters","👤 Characters"],["relationships","⇔ Links"],["disorders","⚕ Traits"]].map(function(pair){
         var p=pair[0],label=pair[1];
         return h("button",{key:p,className:"tab-btn"+(activePanel===p?" active":""),onClick:()=>setActivePanel(p)},label);
       })),
+    // Theme picker toggle — lives just after the tabs
+    h("div",{style:{position:"relative",display:"flex",alignItems:"center",marginLeft:4}},
+      h("button",{className:"btn muted sm",onClick:()=>{setShowThemePicker(s=>!s);setShowFileMenu(false);},
+        title:"Change theme",style:{padding:"4px 8px",fontSize:15,lineHeight:1}},"🎨"),
+      showThemePicker&&h("div",{className:"ctx-menu",style:{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:300,width:210}},
+        h("span",{className:"ctx-label"},"Theme"),
+        THEMES.map(function(t){
+          var active=theme===t.id;
+          return h("button",{key:t.id,className:"ctx-item",
+            style:{display:"flex",alignItems:"center",gap:8,background:active?"var(--th-stone)":"transparent"},
+            onClick:function(){changeTheme(t.id);setShowThemePicker(false);}},
+            h("div",{style:{display:"flex",gap:2,borderRadius:3,overflow:"hidden",width:36,height:14,flexShrink:0}},
+              t.swatches.slice(0,4).map(function(col,i){return h("div",{key:i,style:{flex:1,background:col}});})),
+            h("span",{style:{fontSize:13,flex:1,color:active?"var(--th-accent2)":"var(--th-bone)"}},t.label),
+            active&&h("span",{style:{fontSize:10,color:"var(--th-accent1)",flexShrink:0}},"✶"));
+        }))
+    ),
     h("div",{style:{flex:1,minWidth:0}}),
     // Right actions
     h("div",{style:{display:"flex",gap:4,flexShrink:0,alignItems:"center"}},
@@ -1600,11 +1787,24 @@ function App() {
         linking?"✕ Cancel":"⇔ Link"),
       h("div",{className:"tb-sep"}),
       h("button",{className:"btn muted sm",onClick:confirmAutoLayout,title:"Auto-arrange all cards"},"✦ Arrange"),
-      preLayoutChars&&h("button",{className:"btn muted sm",onClick:undoLayout,title:"Undo the last auto-arrange"},"↩ Undo"),
+      undoLabel&&h("button",{className:"btn sm",onClick:undoLast,title:undoLabel},undoLabel),
       h("div",{className:"tb-sep"}),
-      h("button",{className:"btn muted sm",onClick:exportJSON,title:"Export current dynasty as JSON"},"↓ Export"),
-      h("button",{className:"btn muted sm",onClick:()=>fileRef.current.click(),title:"Import a JSON file as a new dynasty"},"↑ Import"),
-      h("input",{ref:fileRef,type:"file",accept:".json",style:{display:"none"},onChange:importJSON}),
+      // File menu
+      h("div",{style:{position:"relative",display:"flex",alignItems:"center"}},
+        h("button",{className:"btn muted sm",onClick:()=>{setShowFileMenu(s=>!s);setShowThemePicker(false);},title:"Import / Export"},"⋮ File"),
+        h("input",{ref:fileRef,type:"file",accept:".json",style:{display:"none"},onChange:importJSON}),
+        showFileMenu&&h("div",{className:"ctx-menu",style:{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:300,width:200}},
+          h("span",{className:"ctx-label"},"Export"),
+          h("button",{className:"ctx-item",onClick:()=>{exportJSON();setShowFileMenu(false);}},"↓ Export JSON"),
+          h("button",{className:"ctx-item",onClick:()=>{exportSVG();setShowFileMenu(false);}},"↓ Export SVG"),
+          h("hr",{className:"ctx-sep"}),
+          h("span",{className:"ctx-label"},"Import"),
+          h("button",{className:"ctx-item",onClick:()=>{fileRef.current.click();setShowFileMenu(false);}},"↑ Import JSON"),
+          h("hr",{className:"ctx-sep"}),
+          h("span",{className:"ctx-label"},"Danger Zone"),
+          h("button",{className:"ctx-item danger",onClick:()=>{setShowFileMenu(false);clearAll();}},"✕ Clear All"),
+          h("button",{className:"ctx-item",onClick:()=>{setShowFileMenu(false);resetToDemo();}},"↺ Reset to Demo"))
+      ),
       h("div",{className:"tb-sep"}),
       h("button",{className:"btn muted sm icon",onClick:()=>setShowSidebar(s=>!s),title:showSidebar?"Hide sidebar":"Show sidebar"},showSidebar?"◧":"◨")));
 
@@ -1612,7 +1812,11 @@ function App() {
   const treePanel=h("div",{style:{flex:1,position:"relative",overflow:"hidden",minWidth:0,background:"var(--th-void)"}},
     linking&&h("div",{style:{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"var(--th-link-bg)",border:"1px solid var(--th-link-active)",color:"var(--th-link-hover)",padding:"8px 22px",borderRadius:22,zIndex:10,fontSize:13,fontWeight:600,whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 4px 16px rgba(0,0,0,0.5)",letterSpacing:"0.02em"}},
       "🔗 Click a character to link  ·  Esc to cancel"),
-    h("div",{className:"zoom-badge"},Math.round(zoom*100)+"%"),
+    h("div",{className:"zoom-controls"},
+      h("button",{title:"Zoom out",onClick:()=>setZoom(z=>Math.max(0.2,+(z*0.8).toFixed(2)))},"−"),
+      h("button",{className:"zoom-badge",title:"Reset to 100%",onClick:()=>{setZoom(1);setPan({x:40,y:40});}},Math.round(zoom*100)+"%"),
+      h("button",{title:"Zoom in",onClick:()=>setZoom(z=>Math.min(3,+(z*1.25).toFixed(2)))},"＋"),
+      h("button",{title:"Fit all characters on screen",onClick:fitToScreen,style:{fontSize:13,paddingLeft:4,borderLeft:"1px solid var(--th-border)",borderRadius:0}},"⤢ Fit")),
     chars.length===0&&h("div",{style:{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",userSelect:"none",gap:14}},
       h("div",{style:{fontSize:48,opacity:0.15}},"✦"),
       h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:18,color:"var(--th-bone-faint)",letterSpacing:"0.06em",opacity:0.5}},"Your tree is empty"),
@@ -1628,18 +1832,27 @@ function App() {
       h("g",{transform:"translate("+pan.x+","+pan.y+") scale("+zoom+")"},
         ...relLines,
         ...chars.map(c=>h(CharNode,{key:c.id,c,selected,linking,onMouseDown:onNodeMouseDown,
+          dimmed:lineageSet!==null&&!lineageSet.has(c.id),
           onDoubleClick:c=>setEditingChar({...c}),
           onContextMenu:(e,c)=>setContextMenu({kind:"char",x:e.clientX,y:e.clientY,char:c})})))));
 
   // ── CHARACTERS PANEL ───────────────────────────────────────────────────────
+  const filteredChars = charSearch.trim()
+    ? chars.filter(c=>[c.name,c.faction,c.role,c.species].some(v=>v&&v.toLowerCase().includes(charSearch.toLowerCase())))
+    : chars;
   const charsPanel=h("div",{style:{flex:1,overflowY:"auto",padding:24,minWidth:0,background:"var(--th-void)"}},
     h("div",{style:{maxWidth:900,margin:"0 auto"}},
-      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--th-border)"}},
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:14,borderBottom:"1px solid var(--th-border)"}},
         h("div",null,h("div",{className:"panel-heading"},"Characters"),h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",marginTop:3}},chars.length+" characters in this tree")),
-        h("div",{style:{display:"flex",gap:8}},h("button",{className:"btn muted sm",onClick:clearAll},"Clear All"),h("button",{className:"btn muted sm",onClick:resetToDemo,title:"Reset to the built-in demo dynasty"},"↺ Reset Demo"),h("button",{className:"btn",onClick:addChar},"+ Add Character"))),
+        h("button",{className:"btn",onClick:addChar},"+ Add Character")),
+      h("div",{style:{marginBottom:16,display:"flex",gap:8,alignItems:"center"}},
+        h("input",{value:charSearch,onChange:e=>setCharSearch(e.target.value),placeholder:"Search by name, role, faction, species…",style:{flex:1,maxWidth:380}}),
+        charSearch&&h("button",{className:"btn xs ghost",onClick:()=>setCharSearch(""),style:{flexShrink:0}},"✕"),
+        charSearch&&h("span",{style:{fontSize:13,color:"var(--th-bone-dim)",flexShrink:0}},filteredChars.length+" result"+(filteredChars.length!==1?"s":""))),
       chars.length===0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},"No characters yet. Click \"+ Add Character\" to begin."),
+      filteredChars.length===0&&chars.length>0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},"No characters match \""+charSearch+"\"."),
       h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}},
-        ...chars.map(c=>h("div",{key:c.id,className:"char-card",style:{borderColor:selected===c.id?c.color:"var(--th-border)"},
+        ...filteredChars.map(c=>h("div",{key:c.id,className:"char-card",style:{borderColor:selected===c.id?c.color:"var(--th-border)"},
           onClick:()=>{setSelected(c.id);setActivePanel("tree");},
           onContextMenu:e=>{e.preventDefault();setContextMenu({kind:"char",x:e.clientX,y:e.clientY,char:c});}},
           h("div",{style:{display:"flex",alignItems:"flex-start",gap:10}},
@@ -1652,22 +1865,38 @@ function App() {
               h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-faint)",fontSize:11}},"Gen "+genDepths[c.id]))),
           h("div",{className:"card-meta",style:{marginLeft:14}},[c.species,c.age?"Age "+c.age:"",c.role].filter(Boolean).join(" "+dot+" ")),
           c.faction&&h("div",{className:"card-faction",style:{marginLeft:14}},c.faction),
-          c.notes&&h("div",{className:"card-notes"},c.notes.slice(0,100)+(c.notes.length>100?"…":"")),
-          (c.disorders||[]).length>0&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginLeft:14,marginTop:2}},
-            (c.disorders||[]).slice(0,3).map((d,i)=>{const dc=DISORDER_STATUS_COLORS[d.status]||"#909090";return h("span",{key:i,className:"tag",style:{fontSize:11,borderColor:dc,color:dc,background:dc+"18"}},d.name+(d.hereditary?" ↓":""));}),
-            (c.disorders||[]).length>3&&h("span",{style:{fontSize:11,color:"var(--th-bone-dim)",alignSelf:"center"}},"+"+(c.disorders.length-3)+" more")),
           h("div",{className:"card-actions"},
             h("button",{className:"btn xs ghost",onClick:e=>{e.stopPropagation();setEditingChar({...c});}},"Edit"),
+            h("button",{className:"btn xs ghost",onClick:e=>{e.stopPropagation();copyChar(c.id);},title:"Duplicate this character"},"⧉"),
             h("button",{className:"btn xs danger",onClick:e=>{e.stopPropagation();deleteChar(c.id);}},"Delete")))))));
 
   // ── RELATIONSHIPS PANEL ────────────────────────────────────────────────────
+  const REL_FILTER_TYPES = ["All",...RELATIONSHIP_TYPES];
+  const filteredRels = relTypeFilter==="All" ? rels : rels.filter(r=>r.type===relTypeFilter);
   const relsPanel=h("div",{style:{flex:1,overflowY:"auto",padding:24,minWidth:0,background:"var(--th-void)"}},
     h("div",{style:{maxWidth:720,margin:"0 auto"}},
-      h("div",{style:{marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--th-border)"}},
+      h("div",{style:{marginBottom:16,paddingBottom:14,borderBottom:"1px solid var(--th-border)"}},
         h("div",{className:"panel-heading"},"Relationships"),
-        h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",marginTop:3}},rels.length+" connections defined")),
-      rels.length===0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},"No relationships yet. Use \"⇔ Link\" on the tree view to connect characters."),
-      rels.map(r=>{
+        h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",marginTop:3}},
+          relTypeFilter==="All" ? rels.length+" connections defined"
+            : filteredRels.length+" of "+rels.length+" shown")),
+      h("div",{style:{display:"flex",flexWrap:"wrap",gap:5,marginBottom:16}},
+        REL_FILTER_TYPES.map(t=>{
+          const active=relTypeFilter===t, col=RELATION_COLORS[t]||"var(--th-accent2)";
+          const count=t==="All"?rels.length:rels.filter(r=>r.type===t).length;
+          if(t!=="All"&&count===0) return null;
+          return h("button",{key:t,onClick:()=>setRelTypeFilter(t),style:{
+            background:active?(t==="All"?"var(--th-accent2)":col)+"22":"transparent",
+            border:"1px solid "+(active?(t==="All"?"var(--th-accent2)":col):"var(--th-border)"),
+            color:active?(t==="All"?"var(--th-accent2)":col):"var(--th-bone-dim)",
+            padding:"3px 10px",borderRadius:4,cursor:"pointer",
+            fontFamily:"'Crimson Pro',serif",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}},
+            t+(t!=="All"?" ("+count+")":""));
+        }).filter(Boolean)),
+      filteredRels.length===0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},
+        rels.length===0?"No relationships yet. Use \"⇔ Link\" on the tree view to connect characters."
+          :"No \""+relTypeFilter+"\" relationships found."),
+      filteredRels.map(r=>{
         const f=getChar(r.from),t=getChar(r.to); if(!f||!t) return null;
         const col=RELATION_COLORS[r.type]||"#a0a0a0";
         const midLabel=r.type==="Parent"?"Parent Of":r.type;
@@ -1730,83 +1959,13 @@ function App() {
                 })));
           })));
 
-  // ── THEMES PANEL ───────────────────────────────────────────────────────────
-  const THEMES=[
-    {id:"default",    label:"Necromancer",desc:"Dark gold on black parchment",  swatches:["#18140e","#c9a227","#3a2e18","#f0e4cc"]},
-    {id:"castlevania",label:"Castlevania", desc:"Arcane purple & spectral blue", swatches:["#060408","#c070f8","#3a2e60","#ede8ff"]},
-    {id:"vampire",    label:"Vampire",     desc:"Blood crimson and pale gold",   swatches:["#080204","#ff3860","#3a1820","#fff4ec"]},
-    {id:"dungeon",    label:"Dungeon",     desc:"Mossy green in cavern dark",    swatches:["#060c08","#48b870","#1e3828","#d8f0c8"]},
-    {id:"escape",     label:"The Escape",  desc:"Stark monochrome noir",         swatches:["#080808","#d8d8d8","#2a2a2a","#eeeeee"]},
-  ];
-  const themesPanel=h("div",{style:{flex:1,overflowY:"auto",padding:24,minWidth:0,background:"var(--th-void)"}},
-    h("div",{style:{maxWidth:700,margin:"0 auto"}},
-      h("div",{style:{paddingBottom:14,borderBottom:"1px solid var(--th-border)",marginBottom:24}},
-        h("div",{className:"panel-heading"},"Themes"),
-        h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",marginTop:3}},"Choose a visual theme to match your campaign's mood")),
-      h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}},
-        ...THEMES.map(t=>h("div",{key:t.id,onClick:()=>changeTheme(t.id),style:{
-          background:"var(--th-card)",border:"2px solid "+(theme===t.id?"var(--th-accent1)":"var(--th-border)"),
-          borderRadius:10,padding:16,cursor:"pointer",transition:"border-color 0.15s,transform 0.1s",
-          transform:theme===t.id?"scale(1.02)":"scale(1)",
-          boxShadow:theme===t.id?"0 0 0 1px var(--th-accent1),0 4px 20px rgba(0,0,0,0.4)":"0 2px 8px rgba(0,0,0,0.3)"}},
-          h("div",{style:{display:"flex",gap:4,marginBottom:12,borderRadius:5,overflow:"hidden",height:28}},...t.swatches.map((col,i)=>h("div",{key:i,style:{flex:1,background:col}}))),
-          h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:13,color:theme===t.id?"var(--th-accent2)":"var(--th-bone)",letterSpacing:"0.06em",marginBottom:4}},t.label),
-          h("div",{style:{fontSize:13,color:"var(--th-bone-dim)",lineHeight:1.5}},t.desc),
-          theme===t.id&&h("div",{style:{marginTop:10,fontSize:12,color:"var(--th-accent1)",letterSpacing:"0.12em",fontWeight:700}},"✶ ACTIVE"))))));
-
   // ── SIDEBAR ────────────────────────────────────────────────────────────────
   const sidebar=showSidebar&&h("div",{style:{width:272,minWidth:272,maxWidth:272,background:"var(--th-panel)",borderLeft:"2px solid var(--th-border2)",display:"flex",flexDirection:"column",overflow:"hidden"}},
-    selectedChar?h(React.Fragment,null,
-      h("div",{className:"sidebar-char-header"},
-        h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
-          h("div",{style:{width:5,minHeight:44,borderRadius:3,background:selectedChar.color,flexShrink:0,alignSelf:"stretch"}}),
-          h("div",{style:{flex:1,minWidth:0}},
-            h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:14,color:"var(--th-bone)",lineHeight:1.4,wordBreak:"break-word"}},selectedChar.name),
-            selectedChar.titles&&h("div",{style:{fontSize:12,color:selectedChar.color,fontStyle:"italic",marginTop:3}},selectedChar.titles))),
-        h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:10}},
-          h("span",{className:"tag",style:{borderColor:statusColor(selectedChar.status),color:statusColor(selectedChar.status),background:statusColor(selectedChar.status)+"18"}},selectedChar.status),
-          selectedChar.species&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},selectedChar.species),
-          selectedChar.age&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},"Age "+selectedChar.age),
-          selectedChar.role&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},selectedChar.role),
-          selectedChar.faction&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},selectedChar.faction),
-          h("span",{className:"tag",style:{borderColor:"var(--th-accent1)",color:"var(--th-accent1)",background:"var(--th-accent1)"+"18"}},"Generation "+genDepths[selectedChar.id]))),
-      h("div",{className:"sidebar-body"},
-        selectedChar.notes&&h(React.Fragment,null,
-          h("span",{className:"section-title"},"✐ Notes"),
-          h("p",{style:{fontSize:14,color:"var(--th-bone-dim)",fontStyle:"italic",lineHeight:1.65,background:"var(--th-card2)",border:"1px solid var(--th-border2)",borderRadius:6,padding:"10px 12px"}},selectedChar.notes)),
-        h("hr",{className:"divider"}),
-        h("span",{className:"section-title"},"⇔ Relationships ("+selectedRels.length+")"),
-        selectedRels.length===0
-          ? h("div",{style:{fontSize:14,color:"var(--th-bone-dim)",fontStyle:"italic",padding:"4px 0"}},"None yet — use ⇔ Link to connect.")
-          : selectedRels.map(r=>{
-              const other=getChar(r.from===selected?r.to:r.from); if(!other) return null;
-              const isFrom=r.from===selected;
-              const relLabel=r.type==="Parent"?(isFrom?"Parent Of":"Child Of"):r.type;
-              const col=RELATION_COLORS[r.type]||"#a0a0a0";
-              return h("div",{key:r.id,style:{display:"flex",alignItems:"center",gap:7,padding:"6px 0",borderBottom:"1px solid var(--th-border)"}},
-                h("span",{className:"tag",style:{borderColor:col,color:col,fontSize:11,flexShrink:0,background:col+"18"}},relLabel),
-                h("span",{style:{fontSize:14,flex:1,cursor:"pointer",color:"var(--th-bone)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textDecoration:"underline",textDecorationColor:"var(--th-border2)"},onClick:()=>setSelected(other.id)},other.name),
-                h("button",{className:"btn xs danger",onClick:()=>deleteRel(r.id),style:{padding:"2px 6px",flexShrink:0}},"✕"));
-            }).filter(Boolean),
-        h("hr",{className:"divider"}),
-        h("div",{style:{display:"flex",gap:8}},
-          h("button",{className:"btn",style:{flex:1},onClick:()=>setEditingChar({...selectedChar})},"✎ Edit"),
-          h("button",{className:"btn danger",onClick:()=>deleteChar(selectedChar.id)},"🗑")),
-        // Disorders
-        (selectedChar.disorders||[]).length>0&&h(React.Fragment,null,
-          h("hr",{className:"divider"}),
-          h("span",{className:"section-title"},"⚕ Genetic Traits"),
-          (selectedChar.disorders||[]).map((d,i)=>{
-            const dc=DISORDER_STATUS_COLORS[d.status]||"#909090";
-            return h("div",{key:i,style:{display:"flex",alignItems:"center",gap:7,padding:"5px 0",borderBottom:"1px solid var(--th-border)"}},
-              h("div",{style:{width:3,height:32,borderRadius:2,background:dc,flexShrink:0}}),
-              h("div",{style:{flex:1,minWidth:0}},
-                h("div",{style:{fontSize:13,color:"var(--th-bone)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},d.name),
-                h("div",{style:{fontSize:12,color:"var(--th-bone-dim)",display:"flex",alignItems:"center",gap:5}},
-                  h("span",{style:{color:dc,fontWeight:600}},d.status),
-                  d.hereditary&&h("span",{style:{color:"var(--th-accent2)",fontSize:11}},"↓ hereditary"),
-                  d.source==="inherited"&&h("span",{style:{color:"var(--th-accent1)",fontSize:11}},"↯ inherited"))));
-          }))))
+    selectedChar?h(SidebarCharPanel,{
+      key:selectedChar.id,
+      char:selectedChar,allChars:chars,genDepths,selectedRels,
+      onSave:quickSave,onDelete:deleteChar,onDeleteRel:deleteRel,
+      onSelectChar:setSelected,onEdit:c=>setEditingChar({...c})})
     : h("div",{style:{padding:"20px 16px",color:"var(--th-bone-dim)",flex:1,display:"flex",flexDirection:"column",gap:0}},
         h("div",{style:{textAlign:"center",padding:"28px 0 20px"}},
           h("div",{style:{fontSize:34,marginBottom:10,opacity:0.35}},"✦"),
@@ -1850,7 +2009,6 @@ function App() {
       activePanel==="characters"    && charsPanel,
       activePanel==="relationships" && relsPanel,
       activePanel==="disorders"     && disordersPanel,
-      activePanel==="themes"        && themesPanel,
       sidebar),
     editingChar&&h(EditModal,{char:editingChar,allChars:chars,existingRels:rels,
       palette:THEME_PALETTES[theme]||THEME_PALETTES.default,
@@ -1858,11 +2016,12 @@ function App() {
       onAddRel:addRel,onDeleteRel:deleteRel}),
     contextMenu&&h(ContextMenu,{menu:contextMenu,onClose:()=>setContextMenu(null),
       onChangeRelType:changeRelType,onDeleteRel:deleteRel,onDeleteChar:deleteChar,
-      onEditChar:c=>setEditingChar({...c})}),
+      onEditChar:c=>setEditingChar({...c}),onCopyChar:copyChar}),
     confirm&&h(ConfirmDialog,{title:confirm.title,message:confirm.message,confirmLabel:confirm.confirmLabel||"Confirm",
       onConfirm:confirm.onConfirm,onCancel:()=>setConfirm(null)}),
     dynastyPanel,
     showDynPanel&&h("div",{style:{position:"fixed",inset:0,zIndex:199},onClick:()=>setShowDynPanel(false)}),
+    (showFileMenu||showThemePicker)&&h("div",{style:{position:"fixed",inset:0,zIndex:299},onClick:()=>{setShowFileMenu(false);setShowThemePicker(false);}}),
     showWelcome&&h(WelcomePopup,{onClose:()=>setShowWelcome(false)}),
     toast&&h("div",{key:toast+Date.now(),className:"toast"},toast));
 }
