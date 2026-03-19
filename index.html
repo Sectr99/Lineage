@@ -1336,53 +1336,21 @@ function App() {
       (childParents[r.to]     = childParents[r.to]    ||[]).push(r.from);
     });
 
-    // ── Build one fork group per couple ──────────────────────────────────────
-    // We iterate SPOUSE/PARTNER rels directly — one fork per couple.
-    // For each couple (A, B): children = those who have BOTH A and B as parents.
-    // After processing all couples, any child not yet assigned to a fork gets
-    // a solo line from each of their individual parents.
+    // ── Build one fork group per unique parent-set ───────────────────────────
+    // Group children by their full sorted parent-set key, regardless of whether
+    // the parents have a Spouse/Partner relationship. This ensures children
+    // always fork from the horizontal centre between their parents.
 
-    var forkGroups = []; // [{key, parents:[id,...], children:[id,...]}]
-    var childAssigned = {}; // childId → true if covered by a couple-fork
-
-    var seenCouple = {};
-    rels.forEach(function(r){
-      if(r.type !== "Spouse" && r.type !== "Partner") return;
-      var a = r.from, b = r.to;
-      var coupleKey = [a,b].sort().join("|");
-      if(seenCouple[coupleKey]) return;
-      seenCouple[coupleKey] = true;
-
-      // Children of this couple = intersection of a's children and b's children
-      var aKids = parentChildren[a] || [];
-      var bKids = parentChildren[b] || [];
-      var shared = aKids.filter(function(kid){
-        return bKids.indexOf(kid) !== -1;
-      });
-
-      if(shared.length === 0) {
-        // Couple with no shared children — still make a group so couple lines
-        // can be drawn if needed, but skip (no parent lines needed)
-        return;
-      }
-
-      shared.forEach(function(kid){ childAssigned[kid] = true; });
-      forkGroups.push({key: "couple|"+coupleKey, parents:[a,b], children:shared});
-    });
-
-    // Solo parent lines: any child not covered by a couple fork gets one
-    // fork group per individual parent.
-    // Group by parent so siblings of the same single parent share a bar.
-    var soloGroups = {}; // parentId → [childId, ...]
+    var parentSetMap = {}; // sortedParentKey → {key, parents:[], children:[]}
     Object.keys(childParents).forEach(function(childId){
-      if(childAssigned[childId]) return;
-      childParents[childId].forEach(function(pid){
-        (soloGroups[pid] = soloGroups[pid]||[]).push(childId);
-      });
+      var parents = childParents[childId].slice().sort();
+      var key = parents.join("|");
+      if(!parentSetMap[key]){
+        parentSetMap[key] = {key:"pset|"+key, parents:parents, children:[]};
+      }
+      parentSetMap[key].children.push(childId);
     });
-    Object.keys(soloGroups).forEach(function(pid){
-      forkGroups.push({key:"solo|"+pid, parents:[pid], children:soloGroups[pid]});
-    });
+    var forkGroups = Object.keys(parentSetMap).map(function(k){ return parentSetMap[k]; });
 
     // ── Draw each fork group ──────────────────────────────────────────────────
     // Layout per couple fork:
@@ -1422,7 +1390,7 @@ function App() {
       // stemTopY: the Y level where parent elbows meet the vertical stem.
       // Must be at least FORK_DROP below every parent's bottom edge.
       var stemTopY  = Math.max(pBottomY + FORK_DROP, pBottomY);
-      var junctionY = Math.max(stemTopY + 8, stemTopY + (cTopY - stemTopY) * 0.5);
+      var junctionY = stemTopY + 24;
 
       if(pNodes.length === 2){
         var p0 = pNodes[0], p1 = pNodes[1];
