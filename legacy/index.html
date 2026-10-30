@@ -6,33 +6,33 @@
   <title>Lineage — Family Tree Builder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=EB+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; overflow: hidden; }
-    body { background: var(--th-void); color: var(--th-bone); font-family: 'Crimson Pro', serif; font-size: 15px; }
+    body { background: var(--th-void); color: var(--th-bone); font-family: 'EB Garamond', serif; font-size: 15px; }
 
     :root {
-      --th-void:        #18140e;
-      --th-abyss:       #201810;
-      --th-stone:       #2c2210;
-      --th-bone:        #f0e4cc;
-      --th-bone-dim:    #c8aa78;
-      --th-bone-faint:  #9a8258;
-      --th-accent1:     #c9a227;
-      --th-accent2:     #e0b840;
-      --th-accent-hi:   #f0cc50;
-      --th-border:      #3a2e18;
-      --th-border2:     #5a4830;
-      --th-card:        #241c10;
-      --th-card2:       #1c1408;
-      --th-panel:       #201810;
+      --th-void:        #06060a;
+      --th-abyss:       #0e0d11;
+      --th-stone:       #1a1820;
+      --th-bone:        #f5e8c4;
+      --th-bone-dim:    #c8a860;
+      --th-bone-faint:  #7a6840;
+      --th-accent1:     #6ee7a0;
+      --th-accent2:     #d4a840;
+      --th-accent-hi:   #f0c84a;
+      --th-border:      #22202a;
+      --th-border2:     #38323e;
+      --th-card:        #0e0d11;
+      --th-card2:       #06060a;
+      --th-panel:       #0e0d11;
       --th-link-active: #e06888;
       --th-link-hover:  #f08898;
-      --th-link-bg:     #2a0e18;
-      --th-focus-ring:  rgba(201,162,39,0.28);
+      --th-link-bg:     #1a0a18;
+      --th-focus-ring:  rgba(110,231,160,0.28);
     }
     [data-theme="castlevania"] {
       --th-void: #060408; --th-abyss: #0e0820; --th-stone: #1c1640;
@@ -79,7 +79,7 @@
     .btn {
       background: var(--th-stone); border: 1px solid var(--th-accent1); color: var(--th-accent-hi);
       padding: 7px 18px; border-radius: 5px; cursor: pointer;
-      font-family: 'Crimson Pro', serif; font-size: 14px; font-weight: 600;
+      font-family: 'EB Garamond', serif; font-size: 14px; font-weight: 600;
       letter-spacing: 0.04em; line-height: 1; transition: all 0.15s;
       white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
     }
@@ -100,7 +100,7 @@
     .tab-btn {
       background: none; border: none; border-bottom: 2px solid transparent;
       cursor: pointer; padding: 0 16px; height: 100%;
-      font-family: 'Crimson Pro', serif; font-size: 15px; color: var(--th-bone-dim);
+      font-family: 'EB Garamond', serif; font-size: 15px; color: var(--th-bone-dim);
       letter-spacing: 0.04em; transition: color 0.15s; white-space: nowrap;
       display: inline-flex; align-items: center; gap: 6px;
     }
@@ -110,7 +110,7 @@
     input, textarea, select {
       background: var(--th-card2); border: 1px solid var(--th-border2); color: var(--th-bone);
       padding: 9px 13px; border-radius: 5px;
-      font-family: 'Crimson Pro', serif; font-size: 15px;
+      font-family: 'EB Garamond', serif; font-size: 15px;
       width: 100%; outline: none; line-height: 1.4; display: block;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
@@ -127,11 +127,11 @@
       color: var(--th-bone-dim); margin-bottom: 5px; margin-top: 14px; display: block; font-weight: 700;
     }
     .section-title {
-      font-family: 'Cinzel Decorative', serif; font-size: 11px;
+      font-family: 'Cinzel', serif; font-size: 11px;
       letter-spacing: 0.14em; color: var(--th-accent1); text-transform: uppercase;
       margin: 14px 0 8px; display: block;
     }
-    .panel-heading { font-family: 'Cinzel Decorative', serif; font-size: 17px; color: var(--th-accent2); letter-spacing: 0.06em; }
+    .panel-heading { font-family: 'Cinzel', serif; font-size: 17px; color: var(--th-accent2); letter-spacing: 0.06em; }
 
     .tag {
       display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 12px;
@@ -145,7 +145,7 @@
       display: flex; flex-direction: column; gap: 4px;
     }
     .char-card:hover { border-color: var(--th-accent1); background: var(--th-abyss); }
-    .char-card .card-name { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--th-bone); line-height: 1.3; word-break: break-word; }
+    .char-card .card-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--th-bone); line-height: 1.3; word-break: break-word; }
     .char-card .card-titles { font-size: 13px; font-style: italic; color: var(--th-bone-dim); }
     .char-card .card-meta   { font-size: 13px; color: var(--th-bone-dim); }
     .char-card .card-actions{ display: flex; gap: 6px; justify-content: flex-end; margin-top: 2px; opacity: 0; transition: opacity 0.15s; }
@@ -175,30 +175,30 @@
 
     .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.78); display:flex; align-items:center; justify-content:center; z-index:300; }
     .confirm-box { background:var(--th-card); border:1px solid var(--th-border2); border-radius:10px; padding:28px 28px 22px; width:400px; max-width:92vw; box-shadow:0 20px 60px rgba(0,0,0,0.7); }
-    .confirm-title { font-family:'Cinzel Decorative',serif; font-size:15px; color:var(--th-accent-hi); margin-bottom:12px; }
+    .confirm-title { font-family:'Cinzel',serif; font-size:15px; color:var(--th-accent-hi); margin-bottom:12px; }
     .confirm-body  { font-size:15px; color:var(--th-bone); line-height:1.65; margin-bottom:24px; }
     .confirm-actions { display:flex; gap:8px; justify-content:flex-end; }
 
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.82); display:flex; align-items:center; justify-content:center; z-index:200; }
     .modal-box { background:var(--th-card); border:1px solid var(--th-border2); border-radius:12px; width:540px; max-width:96vw; max-height:92vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,0.8); }
-    .modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--th-border); font-family:'Cinzel Decorative',serif; font-size:16px; color:var(--th-accent2); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--th-stone) 0%, var(--th-card) 100%); }
+    .modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--th-border); font-family:'Cinzel',serif; font-size:16px; color:var(--th-accent2); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, var(--th-stone) 0%, var(--th-card) 100%); }
     .modal-body   { padding:6px 24px 24px; }
     .modal-footer { padding:16px 24px; border-top:1px solid var(--th-border); display:flex; gap:8px; justify-content:flex-end; background:var(--th-card2); }
     .form-section { background:var(--th-card2); border:1px solid var(--th-border); border-radius:8px; padding:14px 16px; margin-top:16px; }
-    .form-section-title { font-family:'Cinzel Decorative',serif; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--th-accent1); margin-bottom:6px; }
+    .form-section-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--th-accent1); margin-bottom:6px; }
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
     .form-full  { grid-column:1/-1; }
 
-    .ctx-menu { position:fixed; z-index:500; background:var(--th-card); border:1px solid var(--th-border2); border-radius:8px; padding:4px 0; min-width:190px; box-shadow:0 8px 32px rgba(0,0,0,0.75); font-family:'Crimson Pro',serif; animation:ctxIn 0.1s ease-out; }
+    .ctx-menu { position:fixed; z-index:500; background:var(--th-card); border:1px solid var(--th-border2); border-radius:8px; padding:4px 0; min-width:190px; box-shadow:0 8px 32px rgba(0,0,0,0.75); font-family:'EB Garamond',serif; animation:ctxIn 0.1s ease-out; }
     @keyframes ctxIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-    .ctx-label { font-family:'Cinzel Decorative',serif; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--th-bone-dim); padding:8px 14px 5px; display:block; }
-    .ctx-item  { display:flex; align-items:center; gap:9px; padding:8px 14px; font-size:14px; color:var(--th-bone); cursor:pointer; transition:background 0.1s; white-space:nowrap; background:none; border:none; width:100%; text-align:left; font-family:'Crimson Pro',serif; font-weight:600; }
+    .ctx-label { font-family:'Cinzel',serif; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--th-bone-dim); padding:8px 14px 5px; display:block; }
+    .ctx-item  { display:flex; align-items:center; gap:9px; padding:8px 14px; font-size:14px; color:var(--th-bone); cursor:pointer; transition:background 0.1s; white-space:nowrap; background:none; border:none; width:100%; text-align:left; font-family:'EB Garamond',serif; font-weight:600; }
     .ctx-item:hover { background:var(--th-stone); }
     .ctx-item.danger { color:#f07070; }
     .ctx-item.danger:hover { background:var(--th-abyss); color:#ff9090; }
     .ctx-sep  { border:none; border-top:1px solid var(--th-border); margin:4px 0; }
     .ctx-types{ display:flex; flex-wrap:wrap; gap:5px; padding:6px 10px 8px; }
-    .ctx-type-btn { border:1px solid; border-radius:4px; padding:4px 9px; font-size:12px; font-family:'Crimson Pro',serif; font-weight:600; cursor:pointer; transition:all 0.12s; white-space:nowrap; background:transparent; }
+    .ctx-type-btn { border:1px solid; border-radius:4px; padding:4px 9px; font-size:12px; font-family:'EB Garamond',serif; font-weight:600; cursor:pointer; transition:all 0.12s; white-space:nowrap; background:transparent; }
 
     /* Hereditary toggle pill */
     .h-toggle { display:inline-flex; align-items:center; gap:9px; cursor:pointer; padding:8px 12px; border-radius:6px; border:1px solid var(--th-border); background:var(--th-card); transition:border-color 0.15s,background 0.15s; user-select:none; width:100%; }
@@ -214,7 +214,7 @@
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
     .welcome-box { background:var(--th-card); border:1px solid var(--th-accent1); border-radius:14px; width:460px; max-width:94vw; box-shadow:0 28px 80px rgba(0,0,0,0.85),0 0 40px rgba(201,162,39,0.12); overflow:hidden; }
     .welcome-header { background:linear-gradient(135deg,var(--th-stone) 0%,var(--th-abyss) 100%); padding:28px 28px 20px; border-bottom:1px solid var(--th-border2); text-align:center; }
-    .welcome-title { font-family:'Cinzel Decorative',serif; font-size:22px; color:var(--th-accent2); letter-spacing:0.08em; margin-bottom:6px; }
+    .welcome-title { font-family:'Cinzel',serif; font-size:22px; color:var(--th-accent2); letter-spacing:0.08em; margin-bottom:6px; }
     .welcome-subtitle { font-size:14px; color:var(--th-bone-dim); letter-spacing:0.04em; }
     .welcome-body { padding:24px 28px; line-height:1.75; font-size:15px; color:var(--th-bone); }
     .welcome-body p { margin-bottom:14px; }
@@ -223,19 +223,19 @@
     .welcome-kofi:hover { border-color:var(--th-accent1); background:var(--th-stone); }
     .welcome-kofi-icon { font-size:26px; flex-shrink:0; }
     .welcome-kofi-text { flex:1; }
-    .welcome-kofi-label { font-family:'Cinzel Decorative',serif; font-size:13px; color:var(--th-accent2); letter-spacing:0.06em; margin-bottom:2px; }
+    .welcome-kofi-label { font-family:'Cinzel',serif; font-size:13px; color:var(--th-accent2); letter-spacing:0.06em; margin-bottom:2px; }
     .welcome-kofi-sub { font-size:13px; color:var(--th-bone-dim); }
     .welcome-footer { padding:16px 28px 20px; border-top:1px solid var(--th-border); display:flex; justify-content:center; }
 
     /* Zoom badge */
     .zoom-controls { position:absolute; bottom:14px; right:16px; display:flex; align-items:center; gap:3px; background:var(--th-abyss); border:1px solid var(--th-border); border-radius:6px; padding:2px 4px; }
-    .zoom-controls button { background:none; border:none; color:var(--th-bone-faint); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; font-family:'Crimson Pro',serif; line-height:1; transition:color 0.15s,background 0.15s; }
+    .zoom-controls button { background:none; border:none; color:var(--th-bone-faint); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; font-family:'EB Garamond',serif; line-height:1; transition:color 0.15s,background 0.15s; }
     .zoom-controls button:hover { color:var(--th-accent2); background:var(--th-accent2)18; }
-    .zoom-badge { background:none; border:none; color:var(--th-bone-faint); padding:3px 7px; font-size:12px; font-family:'Crimson Pro',serif; user-select:none; letter-spacing:0.04em; cursor:pointer; transition:color 0.15s; min-width:40px; text-align:center; }
+    .zoom-badge { background:none; border:none; color:var(--th-bone-faint); padding:3px 7px; font-size:12px; font-family:'EB Garamond',serif; user-select:none; letter-spacing:0.04em; cursor:pointer; transition:color 0.15s; min-width:40px; text-align:center; }
     .zoom-badge:hover { color:var(--th-accent2); }
 
     /* Dynasty btn */
-    .dyn-btn { background:var(--th-card2); border:1px solid var(--th-border2); color:var(--th-accent2); padding:5px 11px; border-radius:6px; cursor:pointer; font-family:'Crimson Pro',serif; font-size:14px; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s; white-space:nowrap; max-width:180px; flex-shrink:0; }
+    .dyn-btn { background:var(--th-card2); border:1px solid var(--th-border2); color:var(--th-accent2); padding:5px 11px; border-radius:6px; cursor:pointer; font-family:'EB Garamond',serif; font-size:14px; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s; white-space:nowrap; max-width:180px; flex-shrink:0; }
     .dyn-btn:hover { border-color:var(--th-accent1); background:var(--th-stone); }
     .dyn-btn span.name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:130px; font-weight:600; }
     .dyn-btn span.arrow { font-size:10px; opacity:0.6; flex-shrink:0; }
@@ -253,7 +253,7 @@
       100% { opacity:1; }
     }
     .toast.toast-action { animation:toastInStay 0.3s forwards; pointer-events:all; gap:4px; }
-    .toast-undo-btn { background:none; border:1px solid currentColor; padding:2px 10px; border-radius:10px; cursor:pointer; font-size:13px; font-family:'Crimson Pro',serif; font-weight:600; margin-left:8px; transition:background 0.15s,color 0.15s; }
+    .toast-undo-btn { background:none; border:1px solid currentColor; padding:2px 10px; border-radius:10px; cursor:pointer; font-size:13px; font-family:'EB Garamond',serif; font-weight:600; margin-left:8px; transition:background 0.15s,color 0.15s; }
     .toast-undo-btn:hover { background:var(--th-accent1); color:var(--th-void); border-color:var(--th-accent1); }
   </style>
 </head>
@@ -482,14 +482,14 @@ function CharNode({c,selected,linking,dimmed,onMouseDown,onDoubleClick,onContext
   ch.push(h("circle",{key:"sr",cx:NODE_W-9,cy:HEADER_H/2,r:4,fill:"none",stroke:sc,strokeWidth:1.5}));
   ch.push(h("circle",{key:"sd",cx:NODE_W-9,cy:HEADER_H/2,r:2.5,fill:sc}));
   const nameLines=splitName(c.name), twoLine=nameLines.length===2;
-  const nmProps={textAnchor:"middle",dominantBaseline:"central",fontSize:twoLine?11:12,fontWeight:"700",fill:"var(--th-bone)",fontFamily:"'Cinzel Decorative',serif",style:{userSelect:"none",pointerEvents:"none"}};
+  const nmProps={textAnchor:"middle",dominantBaseline:"central",fontSize:twoLine?11:12,fontWeight:"700",fill:"var(--th-bone)",fontFamily:"'Cinzel',serif",style:{userSelect:"none",pointerEvents:"none"}};
   if(twoLine){
     ch.push(h("text",{key:"nm1",x:cx,y:HEADER_H/2-7,...nmProps},nameLines[0]));
     ch.push(h("text",{key:"nm2",x:cx,y:HEADER_H/2+7,...nmProps},nameLines[1]));
   } else {
     ch.push(h("text",{key:"nm",x:cx,y:HEADER_H/2,...nmProps},nameLines[0]));
   }
-  rows.forEach((row,i)=>ch.push(h("text",{key:"r"+i,x:cx,y:HEADER_H+sp*(i+1),textAnchor:"middle",dominantBaseline:"central",fontSize:row.size,fill:row.color,fontStyle:row.italic?"italic":"normal",fontFamily:"'Crimson Pro',serif",style:{userSelect:"none",pointerEvents:"none"}},row.text)));
+  rows.forEach((row,i)=>ch.push(h("text",{key:"r"+i,x:cx,y:HEADER_H+sp*(i+1),textAnchor:"middle",dominantBaseline:"central",fontSize:row.size,fill:row.color,fontStyle:row.italic?"italic":"normal",fontFamily:"'EB Garamond',serif",style:{userSelect:"none",pointerEvents:"none"}},row.text)));
   return h("g",{style:{cursor:linking?"crosshair":"grab",opacity:dimmed?0.22:1,transition:"opacity 0.15s"},transform:"translate("+c.x+","+c.y+")",
     onMouseDown:e=>onMouseDown(e,c.id),
     onDoubleClick:e=>{e.stopPropagation();onDoubleClick(c);},
@@ -668,7 +668,7 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
             h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
               ...FAMILY_QUICK.map(({label,type})=>{
                 const active=nrt===type,col=RELATION_COLORS[type]||"#a0a0a0";
-                return h("button",{key:type,onClick:()=>setNrt(type),style:{background:active?col+"22":"transparent",border:"1px solid "+(active?col:"var(--th-border)"),color:active?col:"var(--th-bone-dim)",padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'Crimson Pro',serif",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}},label);
+                return h("button",{key:type,onClick:()=>setNrt(type),style:{background:active?col+"22":"transparent",border:"1px solid "+(active?col:"var(--th-border)"),color:active?col:"var(--th-bone-dim)",padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'EB Garamond',serif",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}},label);
               })),
             h("div",{style:{display:"flex",gap:6,marginTop:8}},
               h("div",{style:{flex:1,position:"relative"}},
@@ -709,12 +709,12 @@ function EditModal({char,allChars,existingRels,palette,onSave,onDelete,onClose,o
             nrt==="Child"&&h("div",{style:{fontSize:12,color:"var(--th-accent2)",fontStyle:"italic",marginTop:6}},
               "This character will be added as the child of the selected character."),
             h("div",{style:{marginTop:8}},
-              h("button",{onClick:()=>setShowAllTypes(s=>!s),style:{background:"none",border:"none",color:"var(--th-bone-dim)",cursor:"pointer",fontSize:12,padding:"2px 0",fontFamily:"'Crimson Pro',serif",letterSpacing:"0.04em"}},
+              h("button",{onClick:()=>setShowAllTypes(s=>!s),style:{background:"none",border:"none",color:"var(--th-bone-dim)",cursor:"pointer",fontSize:12,padding:"2px 0",fontFamily:"'EB Garamond',serif",letterSpacing:"0.04em"}},
                 (showAllTypes?"▾ ":"▸ ")+"More relationship types"),
               showAllTypes&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}},
                 ...RELATIONSHIP_TYPES.map(type=>{
                   const active=nrt===type,col=RELATION_COLORS[type]||"#a0a0a0";
-                  return h("button",{key:type,onClick:()=>setNrt(type),style:{background:active?col+"22":"transparent",border:"1px solid "+(active?col:"var(--th-border)"),color:active?col:"var(--th-bone-dim)",padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'Crimson Pro',serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}},type);
+                  return h("button",{key:type,onClick:()=>setNrt(type),style:{background:active?col+"22":"transparent",border:"1px solid "+(active?col:"var(--th-border)"),color:active?col:"var(--th-bone-dim)",padding:"3px 9px",borderRadius:4,cursor:"pointer",fontFamily:"'EB Garamond',serif",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}},type);
                 }))))),
 
         // Color
@@ -792,13 +792,13 @@ function SidebarCharPanel({char, allChars, genDepths, selectedRels, onSave, onDe
       h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
         h("div",{style:{width:5,minHeight:44,borderRadius:3,background:char.color,flexShrink:0,alignSelf:"stretch"}}),
         h("div",{style:{flex:1,minWidth:0}},
-          h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:14,color:"var(--th-bone)",lineHeight:1.4,wordBreak:"break-word"}},char.name),
+          h("div",{style:{fontFamily:"'Cinzel',serif",fontSize:14,color:"var(--th-bone)",lineHeight:1.4,wordBreak:"break-word"}},char.name),
           char.titles&&h("div",{style:{fontSize:12,color:char.color,fontStyle:"italic",marginTop:3}},char.titles))),
       h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginTop:10,alignItems:"center"}},
         h("select",{value:char.status,onChange:e=>onSave({...char,status:e.target.value}),
           style:{fontSize:12,padding:"2px 6px",borderRadius:4,border:"1px solid "+statusColor(char.status),
             color:statusColor(char.status),background:statusColor(char.status)+"18",
-            cursor:"pointer",fontFamily:"'Crimson Pro',serif",fontWeight:600}},
+            cursor:"pointer",fontFamily:"'EB Garamond',serif",fontWeight:600}},
           ...STATUS_OPTIONS.map(s=>h("option",{key:s,value:s},s))),
         char.species&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},char.species),
         char.age&&h("span",{className:"tag",style:{borderColor:"var(--th-border2)",color:"var(--th-bone-dim)"}},"Age "+char.age),
@@ -1791,7 +1791,7 @@ function App() {
       border:"1px solid var(--th-border2)",borderRadius:10,width:300,
       boxShadow:"0 12px 40px rgba(0,0,0,0.7)",overflow:"hidden"}},
     h("div",{style:{padding:"11px 14px 9px",borderBottom:"1px solid var(--th-border)",display:"flex",alignItems:"center",justifyContent:"space-between"}},
-      h("span",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:12,color:"var(--th-accent2)",letterSpacing:"0.08em"}},"Dynasties"),
+      h("span",{style:{fontFamily:"'Cinzel',serif",fontSize:12,color:"var(--th-accent2)",letterSpacing:"0.08em"}},"Dynasties"),
       h("button",{className:"btn xs ghost",onClick:()=>setShowDynPanel(false)},"✕")),
     h("div",{style:{maxHeight:340,overflowY:"auto"}},
       Object.values(dynasties).map(function(dyn){
@@ -1835,7 +1835,7 @@ function App() {
       h("button",{className:"btn sm",style:{width:"100%"},onClick:createDynasty},"+ New Dynasty")));
 
   const topbar=h("div",{style:{background:"var(--th-panel)",borderBottom:"2px solid var(--th-border2)",height:54,flexShrink:0,display:"flex",alignItems:"center",padding:"0 14px",gap:6,minWidth:0}},
-    h("span",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:15,color:"var(--th-accent2)",letterSpacing:"0.08em",flexShrink:0,userSelect:"none",paddingRight:4}},"✦ Lineage"),
+    h("span",{style:{fontFamily:"'Cinzel',serif",fontSize:15,color:"var(--th-accent2)",letterSpacing:"0.08em",flexShrink:0,userSelect:"none",paddingRight:4}},"✦ Lineage"),
     h("div",{className:"tb-sep"}),
     // Dynasty switcher
     h("button",{className:"dyn-btn",onClick:function(){setShowDynPanel(function(v){return !v;});}},
@@ -1845,7 +1845,7 @@ function App() {
     h("div",{className:"tb-sep"}),
     // Tree name editor
     editName
-      ? h("input",{value:treeName,onChange:e=>setTreeName(e.target.value),onBlur:()=>setEditName(false),onKeyDown:e=>{if(e.key==="Enter"||e.key==="Escape")setEditName(false);},autoFocus:true,style:{width:160,background:"transparent",border:"none",borderBottom:"2px solid var(--th-accent1)",color:"var(--th-bone)",fontSize:14,padding:"2px 4px",fontFamily:"'Crimson Pro',serif",flexShrink:0}})
+      ? h("input",{value:treeName,onChange:e=>setTreeName(e.target.value),onBlur:()=>setEditName(false),onKeyDown:e=>{if(e.key==="Enter"||e.key==="Escape")setEditName(false);},autoFocus:true,style:{width:160,background:"transparent",border:"none",borderBottom:"2px solid var(--th-accent1)",color:"var(--th-bone)",fontSize:14,padding:"2px 4px",fontFamily:"'EB Garamond',serif",flexShrink:0}})
       : h("span",{onClick:()=>setEditName(true),title:"Click to rename tree",style:{fontSize:14,color:"var(--th-bone-dim)",cursor:"pointer",flexShrink:0,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",borderBottom:"1px dashed var(--th-border2)",paddingBottom:1}},treeName),
     h("div",{className:"tb-sep"}),
     // Panel tabs
@@ -1937,7 +1937,7 @@ function App() {
       selected&&h("button",{title:"Center view on selected character",onClick:()=>centerOnChar(selected),style:{fontSize:13,paddingLeft:4,borderLeft:"1px solid var(--th-border)",borderRadius:0}},"⊙ Focus")),
     chars.length===0&&h("div",{style:{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none",userSelect:"none",gap:14}},
       h("div",{style:{fontSize:48,opacity:0.15}},"✦"),
-      h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:18,color:"var(--th-bone-faint)",letterSpacing:"0.06em",opacity:0.5}},"Your tree is empty"),
+      h("div",{style:{fontFamily:"'Cinzel',serif",fontSize:18,color:"var(--th-bone-faint)",letterSpacing:"0.06em",opacity:0.5}},"Your tree is empty"),
       h("div",{style:{fontSize:14,color:"var(--th-bone-faint)",opacity:0.4}},"Add a character to get started")),
     h("svg",{ref:svgRef,width:"100%",height:"100%",onMouseDown:onSvgMouseDown,onMouseMove,onMouseUp,onWheel,style:{display:"block",cursor:isPanning?"grabbing":"default"}},
       h("defs",null,
@@ -2008,7 +2008,7 @@ function App() {
             border:"1px solid "+(active?(t==="All"?"var(--th-accent2)":col):"var(--th-border)"),
             color:active?(t==="All"?"var(--th-accent2)":col):"var(--th-bone-dim)",
             padding:"3px 10px",borderRadius:4,cursor:"pointer",
-            fontFamily:"'Crimson Pro',serif",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}},
+            fontFamily:"'EB Garamond',serif",fontSize:13,fontWeight:600,whiteSpace:"nowrap"}},
             t+(t!=="All"?" ("+count+")":""));
         }).filter(Boolean)),
       filteredRels.length===0&&h("div",{style:{color:"var(--th-bone-dim)",fontStyle:"italic",textAlign:"center",padding:"40px 0",fontSize:15}},
@@ -2055,7 +2055,7 @@ function App() {
               h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:12}},
                 h("div",{style:{flex:1,minWidth:0}},
                   h("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
-                    h("div",{style:{fontSize:16,fontWeight:700,color:"var(--th-bone)",fontFamily:"'Cinzel Decorative',serif",letterSpacing:"0.04em"}},name),
+                    h("div",{style:{fontSize:16,fontWeight:700,color:"var(--th-bone)",fontFamily:"'Cinzel',serif",letterSpacing:"0.04em"}},name),
                     hereditary
                       ? h("span",{style:{fontSize:11,color:"var(--th-accent2)",border:"1px solid var(--th-accent2)",borderRadius:3,padding:"1px 6px",letterSpacing:"0.06em"}},"↓ Hereditary")
                       : h("span",{style:{fontSize:11,color:"var(--th-bone-faint)",border:"1px solid var(--th-border2)",borderRadius:3,padding:"1px 6px",letterSpacing:"0.06em"}},"Non-hereditary"))),
@@ -2087,10 +2087,10 @@ function App() {
     : h("div",{style:{padding:"20px 16px",color:"var(--th-bone-dim)",flex:1,display:"flex",flexDirection:"column",gap:0}},
         h("div",{style:{textAlign:"center",padding:"28px 0 20px"}},
           h("div",{style:{fontSize:34,marginBottom:10,opacity:0.35}},"✦"),
-          h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:13,color:"var(--th-bone-dim)",marginBottom:4,opacity:0.7}},"No character selected"),
+          h("div",{style:{fontFamily:"'Cinzel',serif",fontSize:13,color:"var(--th-bone-dim)",marginBottom:4,opacity:0.7}},"No character selected"),
           h("div",{style:{fontSize:13,color:"var(--th-bone-faint)",opacity:0.6}},"Click any node to inspect")),
         h("div",{style:{background:"var(--th-card2)",border:"1px solid var(--th-border)",borderRadius:8,padding:"14px 14px",fontSize:13,lineHeight:1,color:"var(--th-bone-faint)"}},
-          h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:10,letterSpacing:"0.14em",color:"var(--th-bone-dim)",marginBottom:12,opacity:0.8}},"QUICK GUIDE"),
+          h("div",{style:{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:"0.14em",color:"var(--th-bone-dim)",marginBottom:12,opacity:0.8}},"QUICK GUIDE"),
           ...[
             ["Drag","Move cards around the canvas"],
             ["Double-click","Open character editor"],
@@ -2108,7 +2108,7 @@ function App() {
               h("span",{style:{fontSize:13,color:"var(--th-bone-faint)",lineHeight:1.5}},pair[1]));
           }))),
     h("div",{style:{borderTop:"2px solid var(--th-border2)",padding:"10px 14px",flexShrink:0,background:"var(--th-card2)"}},
-      h("div",{style:{fontFamily:"'Cinzel Decorative',serif",fontSize:10,letterSpacing:"0.12em",color:"var(--th-bone-dim)",marginBottom:7,textTransform:"uppercase",opacity:0.7}},"Legend"),
+      h("div",{style:{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:"0.12em",color:"var(--th-bone-dim)",marginBottom:7,textTransform:"uppercase",opacity:0.7}},"Legend"),
       h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}},
         ...[["Parent/Child","var(--th-accent2)"],["Spouse","#e87090"],["Sibling","#60b8e0"],["Rival","#e05050"],["Mentor","#a878e0"]].map(function(pair){
           return h("span",{key:pair[0],className:"tag",style:{borderColor:pair[1],color:pair[1],background:pair[1]+"18",fontSize:11}},pair[0]);
