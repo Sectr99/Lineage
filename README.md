@@ -19,20 +19,26 @@ No installation required. Open `index.html` in any modern browser and start buil
 
 ## Usage
 
-1. Download or clone this repository
-2. Open `index.html` in a browser
-3. Create a dynasty, add characters, and define their relationships
+```bash
+npm install
+npm run dev
+```
 
-All data is saved automatically to your browser's localStorage — no server or account required.
+Then open http://localhost:5173. To produce a static build you can host anywhere, run `npm run build`; the result is in `dist/`.
+
+All data is saved in your browser (IndexedDB). No server or account is needed. To move a tree from the original app, export it there and use **Import** here; v1 `.lineage.json` files are converted automatically.
 
 ---
 
 ## Tech Stack
 
-- [React 18](https://react.dev/) (via CDN)
-- Vanilla CSS with CSS custom properties for theming
-- Browser localStorage for persistence
-- No build tools or dependencies to install
+- React + TypeScript, built with Vite
+- React Flow for the canvas, ELK for automatic layout
+- Zustand + zundo for state and undo/redo
+- Zod validation for imported files and stored data
+- IndexedDB for local persistence
+
+The original single-file version is kept in `legacy/index.html`.
 
 ---
 

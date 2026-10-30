@@ -1,0 +1,141 @@
+/* App layer on top of tokens.css and components.css. Only token colours; red only for attention. */
+
+input, select, textarea {
+  min-width: 0; padding: 6px 8px; background: var(--paper); border: 1.5px solid var(--rule); border-radius: 0;
+  font: 400 var(--fs-16)/1.3 var(--text);
+}
+textarea { width: 100%; resize: vertical; }
+input::placeholder { color: var(--ink-3); font-style: italic; }
+button:disabled { cursor: default; opacity: 0.4; }
+.check { display: inline-flex; align-items: center; gap: 6px; font: 400 var(--fs-12)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.check input { accent-color: var(--ink); }
+
+/* ── Masthead tools ── */
+.tool svg { fill: none; }
+.tool circle { fill: var(--paper); }
+.tool:disabled:hover { color: inherit; }
+@media (max-width: 520px) { .tool-label { display: none; } .tool { padding: 0 8px; } }
+
+.save-alert {
+  max-width: calc(var(--measure) - 2 * var(--gutter)); margin: 16px auto 0; padding: 12px 0 0;
+  border-top: 8px solid var(--red); font-size: var(--fs-16);
+}
+@media (max-width: 1280px) { .save-alert { margin-left: var(--gutter); margin-right: var(--gutter); } }
+.save-alert b { font: 600 var(--fs-14)/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-right: 6px; }
+
+/* ── Page: the tree is the live state, the record sits in the side column ── */
+.screen { grid-template-columns: minmax(0, 1.9fr) minmax(320px, 1fr); gap: 40px; padding-top: 24px; }
+.col-side { gap: 32px; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; padding-right: 4px; }
+.col-side section, .col-main section { min-width: 0; }
+
+.tree-head { flex-wrap: wrap; }
+.tree-tools { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; min-width: 0; }
+.search { position: relative; flex: 0 1 260px; min-width: 0; }
+.search input { width: 100%; height: 32px; }
+.search-results { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; background: var(--paper); border: 1.5px solid var(--rule); }
+.search-results li + li { border-top: 1px solid var(--hair); }
+.search-results button { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; padding: 8px 10px; background: none; border: 0; text-align: left; font: 500 var(--fs-14)/1.2 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.search-results button:hover { background: var(--paper-2); }
+.search-results span { font: italic 400 var(--fs-14)/1.2 var(--text); text-transform: none; letter-spacing: 0; color: var(--ink-3); }
+
+.canvas { position: relative; height: clamp(420px, calc(100vh - 260px), 1100px); border-bottom: 1px solid var(--hair); }
+.empty { position: absolute; z-index: 5; top: 24px; left: 0; right: 0; pointer-events: none; }
+.primary-bar { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+@media (max-width: 920px) {
+  .screen { grid-template-columns: minmax(0, 1fr); }
+  .col-side { position: static; max-height: none; overflow: visible; padding-right: 0; scroll-margin-top: 12px; }
+  .canvas { height: 62vh; min-height: 360px; }
+  .minimap { display: none; }
+  /* The one primary action stays within reach. */
+  .primary-bar { position: sticky; bottom: 0; z-index: 30; margin: 0 calc(-1 * var(--gutter)); padding: 10px var(--gutter); background: var(--paper); border-top: 1px solid var(--hair); }
+  .primary-bar .btn { width: 100%; }
+}
+@media (max-width: 520px) {
+  .tree-tools { flex-basis: 100%; justify-content: space-between; }
+  .search { flex: 1; }
+}
+
+/* ── Side column records ── */
+.rows li + li { border-top: 1px solid var(--hair); }
+.rel-row, .trait-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 2px 0; }
+.name-link { flex: 1; min-width: 0; padding: 6px 0; background: none; border: 0; text-align: left; font: 500 var(--fs-14)/1.2 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.name-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.x { flex: none; width: 32px; height: 32px; background: none; border: 0; color: var(--ink-3); font-size: var(--fs-14); }
+.x:hover { color: var(--red); }
+.col-side h3.eyebrow { margin: 18px 0 4px; }
+.col-side h3.eyebrow:first-of-type { margin-top: 4px; }
+.pick-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.pick-row > input { flex: 1; }
+.picker { max-width: 100%; margin-top: 6px; font-size: var(--fs-14); }
+.pick-row .picker { margin-top: 0; }
+.union-block { padding: 4px 0 10px 12px; margin-bottom: 8px; border-left: 3px solid var(--rule); }
+.children li .name-link::before { content: "Child · "; color: var(--ink-3); }
+.hint { margin: 4px 0; font-style: italic; }
+
+.name-input {
+  width: 100%; padding: 2px 0 6px; background: none; border: 0; border-bottom: 1px solid var(--hair);
+  font: 600 var(--fs-30)/1.05 var(--display); letter-spacing: 0.01em; text-transform: uppercase;
+}
+.name-input:hover, .name-input:focus { border-bottom-color: var(--rule); }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; margin-top: 14px; }
+.fields.one { grid-template-columns: minmax(0, 1fr); margin-top: 0; margin-bottom: 4px; }
+.fields label, .notes { display: grid; gap: 4px; }
+.fields input, .fields select { width: 100%; }
+.notes { margin-top: 12px; }
+.notes textarea { font-style: italic; }
+
+.trait-name { flex: 1; min-width: 0; font-size: var(--fs-16); }
+.trait-name em { color: var(--ink-3); font-size: var(--fs-14); }
+.trait-row select { font-size: var(--fs-14); }
+
+.roster button { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name status" "meta status"; gap: 0 10px; align-items: center; width: 100%; padding: 7px 0; background: none; border: 0; text-align: left; }
+.roster button:hover .roster-name { text-decoration: underline; text-underline-offset: 4px; }
+.roster-name { grid-area: name; font: 500 var(--fs-14)/1.25 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.roster-meta { grid-area: meta; font: italic 400 var(--fs-14)/1.3 var(--text); color: var(--ink-3); min-height: 1em; }
+.roster .eyebrow { grid-area: status; }
+
+/* ── Tree ── */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-controls-button-background-color: var(--paper);
+  --xy-controls-button-background-color-hover: var(--paper-2);
+  --xy-controls-button-color: var(--ink);
+  --xy-controls-button-color-hover: var(--ink);
+  --xy-controls-button-border-color: var(--hair);
+  --xy-controls-box-shadow: none;
+  --xy-minimap-background-color: var(--paper);
+  --xy-minimap-mask-background-color: rgb(125 116 104 / 0.18);
+  --xy-minimap-box-shadow: none;
+  --xy-edge-label-background-color: var(--paper);
+  --xy-edge-label-color: var(--ink-3);
+}
+.react-flow__controls { border: 1.5px solid var(--rule); }
+.react-flow__controls-button svg { fill: currentColor; }
+.minimap { border: 1.5px solid var(--rule); }
+
+.person {
+  display: flex; flex-direction: column; gap: 2px; padding: 9px 12px 8px; cursor: pointer;
+  background: var(--paper); border: 1.5px solid var(--rule); border-top-width: 3px;
+  transition: opacity 0.15s;
+}
+.person:hover { background: var(--paper-2); }
+.person.selected { outline: 3px solid var(--ink); outline-offset: 2px; }
+.person-name { font: 600 var(--fs-16)/1.1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.person-sub { font: italic 400 var(--fs-14)/1.25 var(--text); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 6px; font: 400 var(--fs-12)/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.person.deceased { border-top-style: double; border-top-width: 5px; }
+.person.deceased .person-name { color: var(--ink-2); }
+.union { pointer-events: none; }
+/* Handles are only anchor points; zero size so lines meet cards and each other exactly. */
+.react-flow__handle { width: 0; height: 0; min-width: 0; min-height: 0; border: 0; }
+.dim { opacity: 0.25; }
+.react-flow__edge.e-partner path, .react-flow__edge.e-child path { stroke: var(--rule); stroke-width: 1.5; stroke-linecap: square; }
+.react-flow__edge.e-social path { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.react-flow__edge-text { font: 400 var(--fs-12) var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
+.react-flow__edge.dim { opacity: 0.15; }
+
+/* ── Toast with an undo action ── */
+.toast { display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); }
+.toast.has-action { pointer-events: auto; }
+.toast button { background: none; border: 0; padding: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-decoration: underline; text-underline-offset: 3px; }
