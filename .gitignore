@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Claude Code local settings and preview config
+.claude/
