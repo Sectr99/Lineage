@@ -1,19 +1,18 @@
 # Lineage — Fantasy Family Tree App
 
-A self-contained, single-file web application for building and visualizing family trees for tabletop RPG campaigns, worldbuilding, and fiction writing.
-
-No installation required. Open `index.html` in any modern browser and start building.
+A web app for building and viewing family trees for tabletop RPG campaigns, worldbuilding and fiction. Everything stays in your browser.
 
 ---
 
 ## Features
 
-- **Interactive Family Tree** — Drag-and-drop character nodes on a zoomable canvas with color-coded relationship connectors
-- **Character Profiles** — Track name, gender, titles, species, age, role, faction, and status (Alive, Deceased, Undead, etc.)
-- **12 Relationship Types** — Parent, Child, Spouse, Sibling, Adopted, Guardian, Rival, Ally, Enemy, Mentor, Apprentice, Other
-- **Genetic Trait Tracking** — Model hereditary disorders and conditions with automatic inheritance propagation across family lines
-- **Dynasty Management** — Create and switch between multiple independent family trees in the same browser
-- **5 Visual Themes** — Necromancer, Castlevania, Vampire, Dungeon, and The Escape (noir)
+- **Automatic layout** that keeps couples side by side and children beneath them; drag a card to adjust it, **Arrange** to reset
+- **Character records** for name, titles, role, faction, species, age, pronouns, status and notes
+- **Family and social relationships**: parents, partners, children and siblings, plus Adopted, Guardian, Rival, Ally, Enemy, Mentor, Apprentice and Other
+- **Hereditary traits** that pass to children as Carrier or Unaffected
+- **Several dynasties** in one browser, with import and export
+- **Search**, lineage highlighting for the selected character, and undo/redo (Ctrl+Z / Ctrl+Shift+Z)
+- **Light and dark** appearance in the DungeonTools style, laid out for phones as well as desktops
 
 ---
 
@@ -50,4 +49,4 @@ Human, Elf, Dwarf, Halfling, Orc, Tiefling, Dragonborn, Gnome, Half-Elf, Undead
 
 ## License
 
-This project is free to use for personal and non-commercial purposes.
+MIT. See [LICENSE](LICENSE) for details.
