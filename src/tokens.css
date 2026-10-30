@@ -1,0 +1,76 @@
+/* DungeonTools design tokens + base. Copy into an app as-is, before components.css.
+   Ink on bone paper, one red. Oswald (condensed caps) for structure, Crimson Pro for reading.
+   Fonts: <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"> */
+
+:root {
+  /* Surfaces */
+  --paper: #f1ece1;     /* page */
+  --paper-2: #e7e0d1;   /* wells, bar tracks, hover fills */
+  /* Text, darkest to faintest */
+  --ink: #1a1714;
+  --ink-2: #4b453d;     /* secondary text */
+  --ink-3: #7d7468;     /* labels, captions, meta */
+  /* Lines */
+  --rule: #1a1714;      /* structural rules and control borders; quieter than text in dark mode */
+  --hair: #cdc4b3;      /* hairline row dividers */
+  /* Primary button */
+  --btn: #1a1714; --on-btn: #f1ece1; --btn-hover: #3d372f;
+  /* The one accent: danger / the thing that needs attention now */
+  --red: #a8261b; --on-red: #fff8f0;
+
+  --display: 'Oswald', 'Arial Narrow', sans-serif;
+  --text: 'Crimson Pro', Georgia, serif;
+
+  /* Type scale (px): 12 labels · 14 small/meta · 16 secondary · 18 body · 22 subheads · 30 title · 44 display */
+  --fs-12: 12px; --fs-14: 14px; --fs-16: 16px; --fs-18: 18px; --fs-22: 22px; --fs-30: 30px; --fs-44: 44px;
+
+  --gutter: 24px;       /* 16px below 920px */
+  --measure: 1280px;    /* max content width */
+  --grain: 0.32;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141210; --paper-2: #1e1b18; --ink: #ece5d8; --ink-2: #b9b0a1; --ink-3: #807869;
+    --rule: #6d665b; --hair: #38332d;
+    --btn: #2a2622; --on-btn: #ece5d8; --btn-hover: #38332d;
+    --red: #e2533f; --on-red: #140806;
+    --grain: 0.5; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141210; --paper-2: #1e1b18; --ink: #ece5d8; --ink-2: #b9b0a1; --ink-3: #807869;
+  --rule: #6d665b; --hair: #38332d;
+  --btn: #2a2622; --on-btn: #ece5d8; --btn-hover: #38332d;
+  --red: #e2533f; --on-red: #140806;
+  --grain: 0.5; color-scheme: dark;
+}
+@media (max-width: 920px) { :root { --gutter: 16px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 var(--fs-18)/1.45 var(--text);
+  font-variant-numeric: lining-nums;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+b, strong { font-weight: 600; }
+code { font: 0.85em ui-monospace, Consolas, monospace; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+
+/* Paper grain: fractal noise behind the content (never over text) */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain); mix-blend-mode: multiply;
+}
+
+/* Motion: one short beat per event, never ambient. An app-level "Animations: off" adds .no-motion to <html>. */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+.no-motion *, .no-motion *::before, .no-motion *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
