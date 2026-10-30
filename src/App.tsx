@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { beat, Canvas } from "./Canvas";
+import { beat, Canvas, fitPadding } from "./Canvas";
 import { CharacterPanel } from "./CharacterPanel";
 import {
   addCharacter, clearOffsets, createDynasty, deleteDynasty, exportActive, importFile, renameActive,
@@ -57,7 +57,11 @@ function Shell() {
   const [toastState, setToast] = useState<Toast>(null);
   const [query, setQuery] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const sideRef = useRef<HTMLDivElement>(null);
+  // The panel floats over the tree. Phones always start with it collapsed, since it would cover most of
+  // the tree; on wider screens the last choice is remembered.
+  const phone = () => matchMedia("(max-width: 920px)").matches;
+  const [panelOpen, setPanelOpen] = useState(() => !phone() && load("lineage_panel", ["open", "closed"], "open") === "open");
+  useEffect(() => { if (!phone()) save("lineage_panel", panelOpen ? "open" : "closed"); }, [panelOpen]);
 
   useEffect(() => {
     if (appearance === "auto") delete document.documentElement.dataset.theme;
@@ -85,8 +89,7 @@ function Shell() {
 
   const select = (id: string | null) => {
     setSelected(id);
-    // One column on phones: bring the record into view.
-    if (id && matchMedia("(max-width: 920px)").matches) requestAnimationFrame(() => sideRef.current?.scrollIntoView({ behavior: beat() ? "smooth" : "auto" }));
+    if (id) setPanelOpen(true);
   };
   const jumpTo = (id: string) => {
     setSelected(id);
@@ -101,7 +104,7 @@ function Shell() {
       if (mod && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); (e.shiftKey ? redo : undo)(); }
       else if (mod && e.key.toLowerCase() === "y" && !typing) { e.preventDefault(); redo(); }
       else if (e.key === "Escape") { setSettingsOpen(false); setSelected(null); }
-      else if (e.key === "n" && !typing && !mod) setSelected(addCharacter());
+      else if (e.key === "n" && !typing && !mod) { setSelected(addCharacter()); setPanelOpen(true); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -150,55 +153,61 @@ function Shell() {
 
       {saveError && <div className="save-alert" role="alert"><b>Not saved.</b> {saveError} Export the dynasty to keep a copy.</div>}
 
-      <main className="screen">
-        <div className="col-main">
-          <section>
-            <div className="panel-head tree-head">
-              <h2>Tree</h2>
-              <div className="tree-tools">
-                <div className="search">
-                  <input type="search" placeholder="Find a character" value={query} aria-label="Find a character"
-                    onChange={e => setQuery(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && matches[0]) { jumpTo(matches[0].id); setQuery(""); } }} />
-                  {matches.length > 0 && (
-                    <ul className="search-results">
-                      {matches.map(c => <li key={c.id}><button onClick={() => { jumpTo(c.id); setQuery(""); }}>{c.name}<span>{c.titles || c.role}</span></button></li>)}
-                    </ul>
-                  )}
-                </div>
-                <button className="btn-small" onClick={() => { clearOffsets(); setTimeout(() => fitView({ padding: 0.12, duration: beat() }), 50); }}
-                  title="Clear manual moves and lay the tree out again">Arrange</button>
-              </div>
-            </div>
-            <div className="canvas">
-              {active.chars.length === 0 && (
-                <div className="quiet empty">
-                  <p className="quiet-line">No one here yet.</p>
-                  <p className="quiet-meta">Add the first character, then their parents, partners and children.</p>
-                </div>
+      <main className="stage">
+        <div className="panel-head tree-head">
+          <h2>Tree</h2>
+          <div className="tree-tools">
+            <div className="search">
+              <input type="search" placeholder="Find a character" value={query} aria-label="Find a character"
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && matches[0]) { jumpTo(matches[0].id); setQuery(""); } }} />
+              {matches.length > 0 && (
+                <ul className="search-results">
+                  {matches.map(c => <li key={c.id}><button onClick={() => { jumpTo(c.id); setQuery(""); }}>{c.name}<span>{c.titles || c.role}</span></button></li>)}
+                </ul>
               )}
-              <Canvas selected={selected} showSocial={showSocial} onSelect={select} />
             </div>
-            <div className="primary-bar">
-              <button className="btn btn-primary" onClick={() => select(addCharacter())}>Add character <kbd>N</kbd></button>
-            </div>
-          </section>
+            <button className="btn-small" onClick={() => { clearOffsets(); setTimeout(() => fitView({ padding: fitPadding(panelOpen), duration: beat() }), 50); }}
+              title="Clear manual moves and lay the tree out again">Arrange</button>
+          </div>
         </div>
 
-        <div className="col-side" ref={sideRef}>
-          {selected
-            ? <CharacterPanel id={selected} onSelect={id => (id ? jumpTo(id) : setSelected(null))} onClose={() => setSelected(null)} />
-            : <>
-                <Roster d={active} onPick={jumpTo} />
-                <DynastyPanel active={active} list={list} onSwitch={() => setSelected(null)} />
-              </>}
+        <div className={"canvas" + (panelOpen ? " panel-open" : "")}>
+          {active.chars.length === 0 && (
+            <div className="quiet empty">
+              <p className="quiet-line">No one here yet.</p>
+              <p className="quiet-meta">Add the first character, then their parents, partners and children.</p>
+            </div>
+          )}
+          <Canvas selected={selected} panelOpen={panelOpen} showSocial={showSocial} onSelect={select} />
+
+          {/* Floats over the tree. The wheel scrolls it when hovered and zooms the tree everywhere else. */}
+          {panelOpen ? (
+            <aside className="col-side float-panel" aria-label={selected ? "Character record" : "Characters and dynasty"}>
+              <button className="btn-link panel-collapse" onClick={() => setPanelOpen(false)} aria-expanded="true">Hide panel</button>
+              {selected
+                ? <CharacterPanel id={selected} onSelect={id => (id ? jumpTo(id) : setSelected(null))} onClose={() => setSelected(null)} />
+                : <>
+                    <Roster d={active} onPick={jumpTo} />
+                    <DynastyPanel active={active} list={list} onSwitch={() => setSelected(null)} />
+                  </>}
+              <footer className="panel-colophon">
+                <p className="credit">Created by Sectr99 <span className="dim">· Set in Oswald and Crimson Pro</span></p>
+                <p>Your trees are saved in this browser only. Export a dynasty to back it up or move it.</p>
+              </footer>
+            </aside>
+          ) : (
+            <button className="panel-tab" onClick={() => setPanelOpen(true)} aria-expanded="false">
+              {selected ? active.chars.find(c => c.id === selected)?.name ?? "Characters" : "Characters"}
+              <span className="dim">{active.chars.length}</span>
+            </button>
+          )}
+
+          <div className="primary-float">
+            <button className="btn btn-primary" onClick={() => select(addCharacter())}>Add character <kbd>N</kbd></button>
+          </div>
         </div>
       </main>
-
-      <footer className="site-footer">
-        <p className="credit">Created by Sectr99 <span className="dim">· Set in Oswald and Crimson Pro</span></p>
-        <p>Your trees are saved in this browser only. Export a dynasty to back it up or move it.</p>
-      </footer>
 
       <div className={"overlay" + (settingsOpen ? " open" : "")} onClick={e => e.target === e.currentTarget && setSettingsOpen(false)}>
         <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">

@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   Controls, Handle, MiniMap, Position, ReactFlow, useNodesInitialized, useNodesState, useReactFlow,
-  type Edge, type Node, type NodeProps,
+  type Edge, type FitViewOptions, type Node, type NodeProps,
 } from "@xyflow/react";
 import { computeLayout, NODE_H, NODE_W, structureKey, UNION_SIZE, unionPoint, type Point } from "./layout";
 import { setOffset, useStore } from "./store";
@@ -11,6 +11,12 @@ type PersonData = { char: Character; dim: boolean };
 type UnionData = { dim: boolean };
 
 const hidden = { opacity: 0, pointerEvents: "none" as const };
+
+/** Fit-to-screen padding that keeps the tree clear of the floating panel. */
+export function fitPadding(panelOpen: boolean): FitViewOptions["padding"] {
+  const phone = matchMedia("(max-width: 920px)").matches;
+  return { top: "32px", left: "32px", right: !phone && panelOpen ? "424px" : "32px", bottom: phone ? (panelOpen ? "74%" : "72px") : "32px" };
+}
 
 /** Duration for camera moves; 0 when the viewer asked for reduced motion. */
 export const beat = () => (matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 300);
@@ -70,11 +76,12 @@ function lineageOf(d: Dynasty, id: string | null): Set<string> | null {
 
 type Props = {
   selected: string | null;
+  panelOpen: boolean;
   showSocial: boolean;
   onSelect: (id: string | null) => void;
 };
 
-export function Canvas({ selected, showSocial, onSelect }: Props) {
+export function Canvas({ selected, panelOpen, showSocial, onSelect }: Props) {
   const d = useStore(s => s.active);
   const { fitView } = useReactFlow();
   const [auto, setAuto] = useState<Map<string, Point>>(new Map());
@@ -127,8 +134,8 @@ export function Canvas({ selected, showSocial, onSelect }: Props) {
   // Fit the whole tree once React Flow has measured the cards of a newly opened dynasty.
   const measured = useNodesInitialized() && rfNodes.length > 0;
   useEffect(() => {
-    if (measured) fitView({ padding: 0.12, duration: beat() });
-  }, [d.id, measured, fitView]);
+    if (measured) fitView({ padding: fitPadding(panelOpen), duration: beat() });
+  }, [d.id, measured, fitView]); // not on panel toggles: the camera shouldn't jump when the panel opens
 
   const edges = useMemo<Edge[]>(() => {
     const dimmed = (a: string, b: string) => !!lineage && !(lineage.has(a) && lineage.has(b));
@@ -181,7 +188,8 @@ export function Canvas({ selected, showSocial, onSelect }: Props) {
       proOptions={{ hideAttribution: true }}
     >
       <Controls showInteractive={false} />
-      <MiniMap pannable zoomable className="minimap" nodeColor={n => (n.type === "person" ? "var(--ink-3)" : "transparent")} />
+      {/* Only worth the space once a tree outgrows the screen. */}
+      {d.chars.length > 12 && <MiniMap pannable zoomable className="minimap" nodeColor={n => (n.type === "person" ? "var(--ink-3)" : "transparent")} />}
     </ReactFlow>
   );
 }
