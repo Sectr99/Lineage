@@ -1,0 +1,137 @@
+/* DungeonTools components. Needs tokens.css first. Class names match Dungeon Tracker,
+   so every app shares one vocabulary. Take only the pieces an app uses. */
+
+/* ── Labels ─────────────────────────────────────── */
+.eyebrow { font: 500 var(--fs-12)/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.dim { color: var(--ink-3); }
+.hint { color: var(--ink-3); font-size: var(--fs-14); }
+
+/* ── Masthead: d20 mark + nameplate, heavy rule over a hairline, dateline under ── */
+.masthead { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+.masthead-plate {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 16px; padding: 16px 0 12px;
+  border-top: 3px solid var(--rule); border-bottom: 1px solid var(--rule);
+}
+.masthead-plate::before { content: ''; position: absolute; left: 0; right: 0; top: 3px; border-top: 1px solid var(--rule); }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand-mark { flex: none; width: 40px; height: 40px; }
+.bm-edge  { fill: var(--paper); stroke: var(--ink); stroke-width: 6; stroke-linejoin: round; }
+.bm-facet { fill: none; stroke: var(--ink); stroke-width: 3; }
+.bm-face  { fill: var(--red); }
+.mark { margin: 0; font: 600 var(--fs-30)/0.95 var(--display); letter-spacing: 0.01em; text-transform: uppercase; }
+.tagline { margin-top: 4px; font: italic 400 var(--fs-14)/1.2 var(--text); color: var(--ink-2); }
+.dateline { margin: 10px 0 0; min-height: 12px; font: 400 var(--fs-12)/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.bar-tools { display: flex; gap: 4px; flex: none; }
+.tool {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px;
+  background: none; border: 0; font: 400 var(--fs-14)/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.tool:hover { color: var(--ink-2); }
+.tool svg { width: 18px; height: 18px; fill: currentColor; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+@media (max-width: 920px) { .tagline { display: none; } }
+@media (max-width: 520px) {
+  .mark { font-size: var(--fs-22); white-space: nowrap; }
+  .brand-mark { width: 30px; height: 30px; }
+  .brand { gap: 10px; }
+}
+
+/* ── Page grid: main column + side column, one column below 920px ── */
+.screen {
+  max-width: var(--measure); margin: 0 auto; padding: 32px var(--gutter) 48px;
+  display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 56px; align-items: start;
+}
+.col-main, .col-side { display: grid; gap: 40px; min-width: 0; }
+@media (max-width: 920px) { .screen { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-top: 20px; } }
+
+/* ── Buttons ────────────────────────────────────── */
+/* Primary: one per view. Inset double rule; press sinks like a stamp. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+  border: 0; padding: 0 28px; min-height: 56px;
+  font: 500 var(--fs-18)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.btn-primary {
+  background: var(--btn); color: var(--on-btn);
+  box-shadow: 0 0 0 1.5px var(--rule), inset 0 0 0 3px var(--btn), inset 0 0 0 4.5px var(--paper);
+  transition: background 0.15s, transform 0.08s;
+}
+.btn-primary:hover { background: var(--btn-hover); box-shadow: 0 0 0 1.5px var(--rule), inset 0 0 0 3px var(--btn-hover), inset 0 0 0 4.5px var(--paper); }
+.btn-primary:active { transform: translateY(2px); }
+/* Waiting / locked: a quiet dashed outline, not a big grey slab */
+.btn-primary.is-locked { background: none; color: var(--ink-3); box-shadow: none; pointer-events: none; outline: 1.5px dashed var(--rule); outline-offset: -1.5px; min-height: 48px; }
+.btn kbd { font: 400 var(--fs-12)/1 var(--display); letter-spacing: 0.08em; padding: 4px 6px; border: 1px solid currentColor; opacity: 0.6; }
+@media (max-width: 920px) { .btn kbd { display: none; } }
+/* Text action */
+.btn-link {
+  background: none; border: 0; padding: 4px 0; color: var(--ink-2);
+  font: 400 var(--fs-14)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
+}
+.btn-link:hover { color: var(--ink); }
+.btn-link:disabled { color: var(--ink-3); text-decoration: none; cursor: default; opacity: 0.6; }
+.btn-danger:hover { color: var(--red); }  /* destructive: red only on hover, and kept away from frequent actions */
+/* Small outlined control */
+.btn-small {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px;
+  background: none; border: 1.5px solid var(--rule); color: var(--ink);
+  font: 400 var(--fs-12)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.btn-small:hover, .btn-small.active { background: var(--ink); color: var(--paper); }
+
+/* ── Panels: chapter heading with a 3px rule; roman numerals number the side column ── */
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  padding: 0 0 8px; margin-bottom: 12px; background: none; border: 0; border-bottom: 3px solid var(--rule); text-align: left;
+}
+.panel-head h2 { font: 600 var(--fs-16)/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+.col-side { counter-reset: chapter; }
+.col-side .panel-head h2::before { counter-increment: chapter; content: counter(chapter, upper-roman) '.'; color: var(--ink-3); margin-right: 0.45em; }
+.panel-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; }
+.panel-foot .btn-danger { margin-left: auto; }
+.caret { width: 10px; height: 10px; border-right: 2px solid var(--rule); border-bottom: 2px solid var(--rule); transform: rotate(45deg) translateY(-3px); transition: transform 0.2s; }
+.caret.open { transform: rotate(-135deg) translateY(-1px); }
+
+/* ── Quiet card: holds the space when nothing needs attention ── */
+.quiet { border-top: 3px solid var(--rule); padding-top: 18px; }
+.quiet-line { margin: 12px 0 0; font: italic 400 clamp(28px, 4vw, 42px)/1.15 var(--text); max-width: 30ch; text-wrap: balance; }
+.quiet-meta { margin-top: 12px; color: var(--ink-3); font-size: var(--fs-16); }
+
+/* ── Settings sheet ── */
+.overlay { display: none; position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / 0.5); padding: 24px; overflow-y: auto; }
+.overlay.open { display: block; }
+.sheet { max-width: 640px; margin: 0 auto; background: var(--paper); border: 3px solid var(--rule); }
+.sheet-head { padding: 18px 24px 12px; border-bottom: 3px solid var(--rule); }
+.sheet-head h2 { font: 600 var(--fs-22)/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
+.sheet-sec { padding: 20px 24px; border-bottom: 1px solid var(--hair); display: grid; gap: 14px; }
+.sheet-sec h3 { font: 500 var(--fs-14)/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.sheet-foot { display: flex; justify-content: flex-end; align-items: center; gap: 24px; padding: 16px 24px; position: sticky; bottom: 0; background: var(--paper); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+input[type=range] { width: 100%; accent-color: var(--ink); }
+@media (max-width: 520px) { .overlay { padding: 0; } .sheet { border: 0; min-height: 100%; } }
+
+/* ── Segmented control: ink shows through 1.5px gaps as dividers ── */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1.5px; background: var(--ink); border: 1.5px solid var(--rule); width: fit-content; max-width: 100%; }
+.seg button { background: var(--paper); border: 0; padding: 10px 14px; font: 400 var(--fs-14)/1.1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; text-align: left; }
+.seg button small { display: block; font: 400 var(--fs-12)/1.2 var(--text); text-transform: none; letter-spacing: 0; color: var(--ink-3); }
+.seg button:hover { background: var(--paper-2); }
+.seg button.active { background: var(--ink); color: var(--paper); }
+.seg button.active small { color: inherit; opacity: 0.75; }
+.seg--small button { padding: 7px 12px; }
+@media (max-width: 520px) {
+  .seg:not(.seg--small) { width: 100%; }
+  .seg:not(.seg--small):has(> :nth-child(4)) { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Toast ── */
+.toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 300; padding: 10px 14px; background: var(--ink); color: var(--paper); font: 500 var(--fs-12)/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; pointer-events: none; }
+
+/* ── Colophon footer: double rule inset to content, centred ── */
+.site-footer { position: relative; max-width: var(--measure); margin: 24px auto 0; padding: 28px var(--gutter) 48px; color: var(--ink-3); font-size: var(--fs-12); line-height: 1.55; text-align: center; }
+.site-footer::before, .site-footer::after { content: ''; position: absolute; left: var(--gutter); right: var(--gutter); }
+.site-footer::before { top: 0; border-top: 3px solid var(--rule); }
+.site-footer::after  { top: 6px; border-top: 1px solid var(--rule); }
+.site-footer a { color: inherit; }
+.credit { margin-bottom: 12px; font: 500 var(--fs-12)/1.4 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+.credit .dim { text-transform: none; letter-spacing: 0.02em; font-family: var(--text); font-style: italic; font-size: var(--fs-14); }
+.ogl { max-width: 72ch; margin: 0 auto; text-wrap: pretty; }
